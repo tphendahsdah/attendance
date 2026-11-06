@@ -1,0 +1,2010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PIC Ledger — Student Accounts & Payments</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --paper:#F6F7F5;
+  --paper-raised:#FFFFFF;
+  --ink-900:#121A1F;
+  --ink-700:#37444B;
+  --ink-500:#647178;
+  --ink-300:#9AA6AB;
+  --line:#DEE4E0;
+  --line-strong:#C7D0CB;
+  --primary:#0F6E5C;
+  --primary-dark:#0A4F42;
+  --primary-tint:#E4F1EC;
+  --amber:#B07A22;
+  --amber-tint:#F7EFDC;
+  --danger:#AE3B3B;
+  --danger-tint:#F7E7E7;
+  --gcash:#0072CE;
+  --gcash-tint:#E4F1FC;
+  --paypal:#142C8E;
+  --paypal-gold:#FFC439;
+  --paypal-tint:#E9ECF9;
+  --shadow-modal:0 24px 64px rgba(18,26,31,.28);
+  --shadow-pop:0 2px 10px rgba(18,26,31,.08);
+  --radius-sm:6px;
+  --radius-md:10px;
+  --radius-lg:16px;
+  --font-display:'Fraunces',Georgia,serif;
+  --font-body:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#10151A; --paper-raised:#171E24; --ink-900:#F1F4F3; --ink-700:#C6D0D3;
+    --ink-500:#8E9BA1; --ink-300:#5B6870; --line:#28323A; --line-strong:#38434C;
+    --primary:#2FA98A; --primary-dark:#237E68; --primary-tint:#153029;
+    --amber:#D8A34F; --amber-tint:#2E2717; --danger:#E08484; --danger-tint:#331F1F;
+    --gcash:#4FA6EF; --gcash-tint:#122232; --paypal:#7C8CEF; --paypal-tint:#1B2036;
+    --shadow-modal:0 24px 64px rgba(0,0,0,.5); --shadow-pop:0 2px 10px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#10151A; --paper-raised:#171E24; --ink-900:#F1F4F3; --ink-700:#C6D0D3;
+  --ink-500:#8E9BA1; --ink-300:#5B6870; --line:#28323A; --line-strong:#38434C;
+  --primary:#2FA98A; --primary-dark:#237E68; --primary-tint:#153029;
+  --amber:#D8A34F; --amber-tint:#2E2717; --danger:#E08484; --danger-tint:#331F1F;
+  --gcash:#4FA6EF; --gcash-tint:#122232; --paypal:#7C8CEF; --paypal-tint:#1B2036;
+  --shadow-modal:0 24px 64px rgba(0,0,0,.5); --shadow-pop:0 2px 10px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper); color:var(--ink-900); font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased; min-height:100vh; font-size:15px; line-height:1.5;
+}
+h1,h2,h3,h4{font-family:var(--font-display); font-weight:600; margin:0; color:var(--ink-900);}
+p{margin:0;}
+button{font-family:inherit; cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+a{color:inherit;}
+::selection{background:var(--primary-tint); color:var(--primary-dark);}
+:focus-visible{outline:2px solid var(--primary); outline-offset:2px;}
+.num{font-variant-numeric:tabular-nums;}
+.scroll-x{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+
+/* ============ LAYOUT PRIMITIVES ============ */
+.container{max-width:1180px; margin:0 auto; padding:0 20px;}
+.hidden{display:none !important;}
+.muted{color:var(--ink-500);}
+.small{font-size:12.5px;}
+.divider{height:1px; background:var(--line); border:0; margin:0;}
+.badge{display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:99px; font-size:12px; font-weight:600; letter-spacing:.2px;}
+.badge.paid{background:var(--primary-tint); color:var(--primary-dark);}
+.badge.pending{background:var(--amber-tint); color:var(--amber);}
+.badge.overdue{background:var(--danger-tint); color:var(--danger);}
+.badge.voided{background:var(--line); color:var(--ink-500);}
+.icon{width:18px; height:18px; display:inline-block; vertical-align:middle;}
+.icon svg{width:100%; height:100%; display:block;}
+
+/* ============ BUTTONS ============ */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  border-radius:var(--radius-sm); border:1px solid transparent; font-weight:600; font-size:14px;
+  padding:10px 18px; transition:background .15s ease, border-color .15s ease, transform .05s ease;
+  white-space:nowrap;
+}
+.btn:active{transform:translateY(1px);}
+.btn-primary{background:var(--primary); color:#fff;}
+.btn-primary:hover{background:var(--primary-dark);}
+.btn-ghost{background:transparent; color:var(--ink-700); border-color:var(--line-strong);}
+.btn-ghost:hover{background:var(--paper-raised); border-color:var(--ink-500);}
+.btn-danger{background:transparent; color:var(--danger); border-color:var(--danger);}
+.btn-danger:hover{background:var(--danger-tint);}
+.btn-sm{padding:6px 12px; font-size:12.5px; border-radius:5px;}
+.btn-block{width:100%;}
+.btn:disabled{opacity:.45; cursor:not-allowed;}
+.icon-btn{
+  width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center;
+  border-radius:var(--radius-sm); border:1px solid var(--line-strong); background:var(--paper-raised); color:var(--ink-700);
+}
+.icon-btn:hover{border-color:var(--ink-500);}
+
+/* ============ FORMS ============ */
+.field{display:flex; flex-direction:column; gap:6px; margin-bottom:14px;}
+.field label{font-size:12.5px; font-weight:600; color:var(--ink-700);}
+.field .hint{font-size:11.5px; color:var(--ink-500); font-weight:400;}
+.field input, .field select, .field textarea{
+  border:1px solid var(--line-strong); background:var(--paper-raised); color:var(--ink-900);
+  border-radius:var(--radius-sm); padding:10px 12px; font-size:14px; width:100%;
+}
+.field input:focus, .field select:focus, .field textarea:focus{border-color:var(--primary);}
+.field-row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+@media (max-width:520px){.field-row{grid-template-columns:1fr;}}
+.input-money{position:relative;}
+.input-money::before{content:"\20B1"; position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--ink-500); font-weight:600;}
+.input-money input{padding-left:26px;}
+.error-text{color:var(--danger); font-size:12px; margin-top:4px; display:none;}
+.error-text.show{display:block;}
+
+/* ============ LOGIN ============ */
+.login-wrap{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; background:
+  radial-gradient(circle at 15% 10%, var(--primary-tint) 0%, transparent 45%), var(--paper);}
+.login-card{width:100%; max-width:960px; background:var(--paper-raised); border:1px solid var(--line); border-radius:var(--radius-lg);
+  display:grid; grid-template-columns:1.1fr 1fr; overflow:hidden; box-shadow:var(--shadow-pop);}
+@media (max-width:820px){.login-card{grid-template-columns:1fr;}}
+.login-hero{background:var(--ink-900); color:#F6F7F5; padding:44px 40px; display:flex; flex-direction:column; justify-content:space-between; gap:32px;}
+.login-hero .brand{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.2px;}
+.login-hero .brand-mark{width:34px; height:34px; border-radius:8px; background:var(--primary); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:700; font-size:17px;}
+.login-hero h1{font-size:clamp(28px,4vw,36px); color:#fff; line-height:1.15; font-weight:600;}
+.login-hero .sub{color:#B9C4C1; font-size:14.5px; line-height:1.6; max-width:38ch;}
+.login-stat-row{display:flex; gap:28px; border-top:1px solid #2A353A; padding-top:20px;}
+.login-stat b{display:block; font-family:var(--font-display); font-size:22px; color:#fff;}
+.login-stat span{font-size:11.5px; color:#9BA9A5; text-transform:uppercase; letter-spacing:.6px;}
+.login-panel{padding:40px; display:flex; flex-direction:column;}
+.role-tabs{display:flex; border:1px solid var(--line-strong); border-radius:var(--radius-sm); padding:3px; margin-bottom:26px;}
+.role-tabs button{flex:1; border:0; background:transparent; padding:9px; border-radius:4px; font-weight:600; font-size:13.5px; color:var(--ink-500);}
+.role-tabs button.active{background:var(--ink-900); color:#fff;}
+.login-panel h2{font-size:20px; margin-bottom:4px;}
+.login-panel .sub{color:var(--ink-500); font-size:13px; margin-bottom:22px;}
+.demo-box{background:var(--paper); border:1px dashed var(--line-strong); border-radius:var(--radius-sm); padding:12px 14px; font-size:12px; color:var(--ink-500); margin-top:8px; line-height:1.7;}
+.demo-box b{color:var(--ink-700);}
+.login-error{background:var(--danger-tint); color:var(--danger); border-radius:var(--radius-sm); padding:10px 12px; font-size:13px; margin-bottom:14px; display:none;}
+.login-error.show{display:block;}
+
+/* ============ APP SHELL — shared ============ */
+.topbar{position:sticky; top:0; z-index:30; background:var(--paper-raised); border-bottom:1px solid var(--line);}
+.topbar-inner{display:flex; align-items:center; justify-content:space-between; padding:12px 20px; gap:12px;}
+.brand-sm{display:flex; align-items:center; gap:9px; font-weight:700; font-size:14.5px;}
+.brand-sm .brand-mark{width:26px; height:26px; border-radius:6px; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:13px; font-weight:700;}
+.who{display:flex; align-items:center; gap:10px;}
+.avatar{width:32px; height:32px; border-radius:50%; background:var(--primary-tint); color:var(--primary-dark); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12.5px; font-family:var(--font-display);}
+.who-name{font-size:13px; font-weight:600; line-height:1.2;}
+.who-sub{font-size:11px; color:var(--ink-500);}
+
+/* ---- Student tabs ---- */
+.stu-tabs{display:flex; gap:2px; padding:0 20px; overflow-x:auto;}
+.stu-tabs button{border:0; background:transparent; padding:12px 14px; font-size:13px; font-weight:600; color:var(--ink-500); border-bottom:2px solid transparent; white-space:nowrap; display:flex; align-items:center; gap:7px;}
+.stu-tabs button.active{color:var(--primary-dark); border-bottom-color:var(--primary);}
+.mobile-tabbar{display:none;}
+@media (max-width:680px){
+  .stu-tabs{display:none;}
+  .mobile-tabbar{
+    display:flex; position:fixed; left:0; right:0; bottom:0; z-index:40; background:var(--paper-raised);
+    border-top:1px solid var(--line); padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+  }
+  .mobile-tabbar button{flex:1; border:0; background:transparent; display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 2px; color:var(--ink-500); font-size:10.5px; font-weight:600;}
+  .mobile-tabbar button.active{color:var(--primary-dark);}
+  body.has-mobilebar .page{padding-bottom:76px;}
+}
+
+.page{padding:26px 0 60px;}
+.section-title{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap;}
+.section-title h2{font-size:19px;}
+.section-title .sub{color:var(--ink-500); font-size:13px;}
+
+/* ---- ledger cards ---- */
+.ledger-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:var(--radius-md); overflow:hidden; margin-bottom:22px;}
+@media (max-width:720px){.ledger-grid{grid-template-columns:1fr;}}
+.ledger-cell{background:var(--paper-raised); padding:20px 22px;}
+.ledger-cell .lbl{font-size:12px; color:var(--ink-500); font-weight:600; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px;}
+.ledger-cell .val{font-family:var(--font-display); font-size:clamp(22px,3vw,30px); font-weight:600;}
+.ledger-cell .val.pos{color:var(--primary-dark);}
+.ledger-cell .val.neg{color:var(--danger);}
+.ledger-cell .fine{font-size:12px; color:var(--ink-500); margin-top:6px;}
+
+.panel{background:var(--paper-raised); border:1px solid var(--line); border-radius:var(--radius-md); margin-bottom:20px;}
+.panel-head{display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--line); gap:10px; flex-wrap:wrap;}
+.panel-head h3{font-size:15px;}
+.panel-body{padding:4px 20px 18px;}
+.panel-body.pad{padding:20px;}
+
+table.ledger-table{width:100%; border-collapse:collapse; font-size:13.5px; min-width:520px;}
+table.ledger-table th{text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-500); font-weight:700; padding:10px 8px; border-bottom:1px solid var(--line-strong);}
+table.ledger-table td{padding:12px 8px; border-bottom:1px solid var(--line);}
+table.ledger-table tr:last-child td{border-bottom:0;}
+table.ledger-table td.amt, table.ledger-table th.amt{text-align:right;}
+table.ledger-table tr.clickable{cursor:pointer;}
+table.ledger-table tr.clickable:hover{background:var(--paper);}
+
+.row-flex{display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--line);}
+.row-flex:last-child{border-bottom:0;}
+
+.empty-state{text-align:center; padding:44px 20px; color:var(--ink-500);}
+.empty-state .icon{width:34px; height:34px; margin-bottom:10px; opacity:.5;}
+.empty-state p{font-size:13.5px;}
+
+/* Pay method cards */
+.method-grid{display:grid; grid-template-columns:1fr; gap:12px; margin:14px 0 20px;}
+@media (min-width:560px){.method-grid{grid-template-columns:repeat(3,1fr);}}
+.method-card{border:1.5px solid var(--line-strong); border-radius:var(--radius-md); padding:16px; cursor:pointer; background:var(--paper-raised); text-align:left; display:flex; flex-direction:column; gap:8px; transition:border-color .12s;}
+.method-card:hover{border-color:var(--ink-500);}
+.method-card.selected{border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-tint);}
+.method-chip{display:inline-flex; align-items:center; gap:7px; font-weight:700; font-size:13.5px; padding:6px 10px; border-radius:6px; width:fit-content;}
+.method-chip.gcash{background:var(--gcash-tint); color:var(--gcash);}
+.method-chip.paypal{background:var(--paypal-tint); color:var(--paypal);}
+.method-chip.cash{background:var(--amber-tint); color:var(--amber);}
+.method-chip.qr{background:var(--primary-tint); color:var(--primary-dark);}
+.method-card .desc{font-size:12px; color:var(--ink-500);}
+
+/* QR panels */
+.qr-shell{max-width:380px; margin:0 auto; text-align:center;}
+.qr-box{width:192px; height:192px; margin:0 auto 16px; background:#fff; border:1px solid var(--line-strong); border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; padding:8px;}
+.qr-box img, .qr-box canvas{width:100% !important; height:100% !important;}
+.qr-waiting-dot{display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--amber); margin-right:6px; animation:pulse 1s infinite ease-in-out;}
+.scan-video-wrap{position:relative; width:100%; max-width:340px; margin:0 auto 14px; border-radius:var(--radius-md); overflow:hidden; background:#000; aspect-ratio:4/3;}
+.scan-video-wrap video{width:100%; height:100%; object-fit:cover; display:block;}
+.qr-pending-item{display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line);}
+.qr-pending-item:last-child{border-bottom:0;}
+
+/* Gateway simulation */
+.gateway-shell{max-width:420px; margin:0 auto; border-radius:var(--radius-lg); overflow:hidden; border:1px solid var(--line); box-shadow:var(--shadow-pop);}
+.gateway-head{padding:22px 24px; color:#fff;}
+.gateway-head.gcash{background:linear-gradient(135deg,#0072CE,#0057A0);}
+.gateway-head.paypal{background:linear-gradient(135deg,#142C8E,#0B1B63);}
+.gateway-head .gname{font-weight:800; font-size:17px; letter-spacing:.2px;}
+.gateway-head .gamt{font-family:var(--font-display); font-size:30px; margin-top:10px;}
+.gateway-body{background:var(--paper-raised); padding:24px;}
+.demo-banner{background:var(--amber-tint); color:var(--amber); font-size:11.5px; font-weight:700; text-align:center; padding:7px; letter-spacing:.3px;}
+.dots-spin{display:flex; gap:6px; justify-content:center; padding:30px 0;}
+.dots-spin span{width:9px; height:9px; border-radius:50%; background:var(--primary); animation:pulse 1s infinite ease-in-out;}
+.dots-spin span:nth-child(2){animation-delay:.15s;} .dots-spin span:nth-child(3){animation-delay:.3s;}
+@keyframes pulse{0%,80%,100%{opacity:.25; transform:scale(.85);} 40%{opacity:1; transform:scale(1);}}
+.success-check{width:56px; height:56px; border-radius:50%; background:var(--primary-tint); color:var(--primary); display:flex; align-items:center; justify-content:center; margin:6px auto 16px;}
+
+/* Receipt */
+.receipt{max-width:420px; margin:0 auto; background:var(--paper-raised); border:1px solid var(--line); border-radius:var(--radius-md);}
+.receipt-top{padding:22px 24px 16px; text-align:center; border-bottom:1px dashed var(--line-strong);}
+.receipt-top .rmark{width:38px; height:38px; border-radius:9px; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; font-family:var(--font-display); font-weight:700;}
+.receipt-top h3{font-size:16px;}
+.receipt-top .sub{font-size:12px; color:var(--ink-500); margin-top:2px;}
+.receipt-body{padding:18px 24px;}
+.receipt-row{display:flex; justify-content:space-between; font-size:13px; padding:6px 0; color:var(--ink-700);}
+.receipt-row b{color:var(--ink-900); font-weight:600;}
+.receipt-amt{text-align:center; padding:14px 0; margin:10px 0; border-top:1px dashed var(--line-strong); border-bottom:1px dashed var(--line-strong);}
+.receipt-amt .amt{font-family:var(--font-display); font-size:32px; color:var(--primary-dark);}
+.receipt-amt .lbl{font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--ink-500); margin-top:4px;}
+.receipt-foot{padding:14px 24px 22px; display:flex; gap:10px;}
+
+/* Modal */
+.modal-overlay{position:fixed; inset:0; background:rgba(15,20,17,.55); z-index:100; display:flex; align-items:flex-end; justify-content:center; padding:0;}
+@media (min-width:640px){.modal-overlay{align-items:center; padding:24px;}}
+.modal{background:var(--paper-raised); width:100%; max-width:560px; max-height:92vh; overflow-y:auto; border-radius:16px 16px 0 0; box-shadow:var(--shadow-modal);}
+@media (min-width:640px){.modal{border-radius:var(--radius-lg);}}
+.modal-head{display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--paper-raised); z-index:2;}
+.modal-head h3{font-size:16px;}
+.modal-body{padding:22px;}
+
+/* Admin shell */
+.admin-shell{display:flex; min-height:100vh;}
+.admin-sidebar{width:230px; flex-shrink:0; background:var(--ink-900); color:#E7ECEA; padding:20px 14px; position:fixed; top:0; bottom:0; left:0; z-index:50; transform:translateX(-100%); transition:transform .2s ease; overflow-y:auto;}
+.admin-sidebar.open{transform:translateX(0);}
+@media (min-width:960px){.admin-sidebar{position:sticky; transform:none;}}
+.admin-sidebar .brand{display:flex; align-items:center; gap:9px; font-weight:700; padding:6px 10px 22px; font-size:14.5px;}
+.admin-sidebar .brand-mark{width:28px; height:28px; border-radius:7px; background:var(--primary); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:700; font-size:13px;}
+.admin-nav button{width:100%; display:flex; align-items:center; gap:11px; padding:10px 12px; border:0; background:transparent; color:#B7C4C0; border-radius:8px; font-size:13.5px; font-weight:600; margin-bottom:2px; text-align:left;}
+.admin-nav button.active{background:#1E2A2C; color:#fff;}
+.admin-nav button:hover{color:#fff;}
+.admin-side-foot{margin-top:22px; padding-top:16px; border-top:1px solid #263133; font-size:11.5px; color:#7C8B87; padding-left:12px; line-height:1.6;}
+.admin-main{flex:1; min-width:0;}
+.admin-content{padding:24px 24px 60px;}
+.admin-drawer-backdrop{position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:45; display:none;}
+.admin-drawer-backdrop.show{display:block;}
+@media (min-width:960px){.admin-drawer-backdrop{display:none !important;}}
+.only-mobile-flex{display:none;}
+@media (max-width:959px){.only-mobile-flex{display:inline-flex;}}
+
+.stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px;}
+@media (max-width:920px){.stat-grid{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:480px){.stat-grid{grid-template-columns:1fr;}}
+.stat-card{background:var(--paper-raised); border:1px solid var(--line); border-radius:var(--radius-md); padding:16px 18px;}
+.stat-card .lbl{font-size:11.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-500); font-weight:700; margin-bottom:8px;}
+.stat-card .val{font-family:var(--font-display); font-size:24px; font-weight:600;}
+.stat-card .delta{font-size:11.5px; margin-top:6px; color:var(--ink-500);}
+
+.two-col{display:grid; grid-template-columns:1.4fr 1fr; gap:18px;}
+@media (max-width:900px){.two-col{grid-template-columns:1fr;}}
+
+.searchbar{display:flex; align-items:center; gap:8px; border:1px solid var(--line-strong); border-radius:var(--radius-sm); padding:8px 12px; background:var(--paper-raised); min-width:200px;}
+.searchbar input{border:0; outline:0; background:transparent; font-size:13.5px; width:100%; color:var(--ink-900);}
+.searchbar .icon{color:var(--ink-500); flex-shrink:0;}
+
+.filter-row{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px;}
+.filter-row select{border:1px solid var(--line-strong); border-radius:var(--radius-sm); padding:8px 10px; font-size:13px; background:var(--paper-raised); color:var(--ink-900);}
+
+.chart-bars{display:flex; flex-direction:column; gap:12px;}
+.chart-bar-row{display:grid; grid-template-columns:88px 1fr 90px; gap:10px; align-items:center; font-size:12.5px;}
+.chart-bar-track{background:var(--paper); border-radius:5px; height:10px; overflow:hidden;}
+.chart-bar-fill{height:100%; border-radius:5px;}
+
+.toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--ink-900); color:#fff; padding:11px 20px; border-radius:99px; font-size:13px; font-weight:600; z-index:200; box-shadow:var(--shadow-modal); display:flex; align-items:center; gap:8px;}
+@media (max-width:680px){.toast{bottom:86px;}}
+
+.detail-head{display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:18px;}
+.detail-id{display:flex; align-items:center; gap:14px;}
+.detail-id .avatar{width:46px; height:46px; font-size:16px;}
+.back-link{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; color:var(--ink-500); margin-bottom:14px; border:0; background:transparent; padding:0;}
+.back-link:hover{color:var(--ink-900);}
+
+.kv-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px 20px;}
+@media (max-width:480px){.kv-grid{grid-template-columns:1fr;}}
+.kv-grid .k{font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-500); font-weight:700; margin-bottom:3px;}
+.kv-grid .v{font-size:14px; font-weight:500;}
+
+@media print{
+  body *{visibility:hidden;}
+  .printable, .printable *{visibility:visible;}
+  .printable{position:absolute; top:0; left:0; width:100%; padding:20px;}
+  .no-print{display:none !important;}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   UTILITIES
+=============================================================== */
+var DB_KEY = "ssaps_data_v2";
+var SESSION_KEY = "ssaps_session_v2";
+
+function uid(p){ return p + "_" + Math.random().toString(36).slice(2,9); }
+function fmtMoney(n){
+  n = Number(n)||0;
+  var sign = n < 0 ? "-" : "";
+  n = Math.abs(n);
+  return sign + "\u20B1" + n.toLocaleString("en-PH", {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmtDate(iso){
+  var d = new Date(iso);
+  if (isNaN(d)) return iso;
+  return d.toLocaleDateString("en-US", {year:"numeric", month:"short", day:"numeric"});
+}
+function fmtDateTime(iso){
+  var d = new Date(iso);
+  if (isNaN(d)) return iso;
+  return d.toLocaleDateString("en-US", {year:"numeric", month:"short", day:"numeric"}) + " \u00B7 " +
+         d.toLocaleTimeString("en-US", {hour:"numeric", minute:"2-digit"});
+}
+function esc(s){
+  return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+/* ============================================================
+   PAYMENT INTEGRATION CONFIG — swap point for going live
+   -------------------------------------------------------------
+   Everything below is SIMULATED (mode:"simulated"). No real money
+   moves and no real credentials are used or requested.
+
+   To go live, the school's IT office needs a small backend
+   (Node/PHP/etc.) holding the real secrets below — NEVER put a
+   secret key in this file, since it is public client-side code.
+   The backend exposes its own endpoints (e.g. /api/pay/gcash,
+   /api/pay/paypal, /api/webhooks/*) that this page would call
+   instead of the simulate* functions further down. See the
+   accompanying integration guide for the full checklist.
+=============================================================== */
+var PAYMENT_CONFIG = {
+  gcash: {
+    provider: "GCash for Business, via a PCI-compliant aggregator (e.g. PayMongo, Xendit, DragonPay)",
+    merchantId: null,          // set server-side only, never here
+    createPaymentEndpoint: "/api/pay/gcash/create",   // backend route this page would call
+    webhookEndpoint: "/api/webhooks/gcash",           // backend route the aggregator calls back
+    mode: "simulated"          // flip to "live" only once the backend above exists
+  },
+  paypal: {
+    provider: "PayPal Business (Checkout / Orders API)",
+    clientId: null,            // PayPal's public Client ID is safe client-side; the Secret is not
+    createPaymentEndpoint: "/api/pay/paypal/create",
+    webhookEndpoint: "/api/webhooks/paypal",
+    mode: "simulated"
+  },
+  qr: {
+    provider: "QR Ph (EMVCo-compliant) merchant QR, generated through the GCash for Business dashboard or aggregator API",
+    merchantId: null,
+    createPaymentEndpoint: "/api/pay/qr/create",       // backend mints the real, amount-bound QR Ph payload
+    webhookEndpoint: "/api/webhooks/qr",               // backend marks the request paid on scan/settlement
+    mode: "simulated"
+  }
+};
+
+function refNumber(prefix){
+  var n = "";
+  for (var i=0;i<10;i++) n += Math.floor(Math.random()*10);
+  return prefix + "-" + n;
+}
+
+/* ============================================================
+   ICONS (inline SVG, stroke currentColor)
+=============================================================== */
+var ICON = {
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-9"/></svg>',
+  wallet:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M16 14h2"/></svg>',
+  card:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 10h19"/><path d="M6 14.5h4"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>',
+  user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1.6-3.8 4.6-5.6 7.5-5.6s5.9 1.8 7.5 5.6"/></svg>',
+  users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.8 19c1.4-3.3 3.9-4.8 6.2-4.8s4.8 1.5 6.2 4.8"/><circle cx="17" cy="8.5" r="2.5"/><path d="M15.5 14.4c2 .3 3.6 1.7 4.7 4.1"/></svg>',
+  tag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12.8 12.3 20.5a1.5 1.5 0 0 1-2.1 0l-6.7-6.7a1.5 1.5 0 0 1 0-2.1L11.2 4H18a2 2 0 0 1 2 2v6.8Z"/><circle cx="15.2" cy="8.8" r="1.4"/></svg>',
+  receipt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-2.5-1.6L13 21l-2.5-1.6L8 21l-2-1.6V3Z"/><path d="M9 8h6M9 12h6"/></svg>',
+  chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/><path d="M2.5 20h19"/></svg>',
+  menu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3.5 6.5h17M3.5 12h17M3.5 17.5h17"/></svg>',
+  close:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-2"/><path d="M9 12h11m0 0-3-3m3 3-3 3"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.5-4.5"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4.8c0-.4.4-.8.9-.8h4.2c.5 0 .9.4.9.8V7"/><path d="M6.5 7l.8 12.2c0 .9.8 1.6 1.7 1.6h6c.9 0 1.7-.7 1.7-1.6L17.5 7"/></svg>',
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l.9-3.9L16.6 4.4a1.5 1.5 0 0 1 2.1 0l1 1a1.5 1.5 0 0 1 0 2.1L8 19.1 4 20Z"/></svg>',
+  download:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0-4-4m4 4 4-4"/><path d="M4.5 17.5V19a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-1.5"/></svg>',
+  print:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9V4h11v5"/><rect x="4.5" y="9" width="15" height="7" rx="1.5"/><path d="M6.5 14.5h11V20h-11z"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>',
+  chevron:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+  lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>',
+  inbox:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12.5h5l1.5 2.5h4l1.5-2.5h5"/><path d="M5 5.5h14l2 7v6a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5v-6l2-7Z"/></svg>'
+};
+function ic(name){ return '<span class="icon">'+(ICON[name]||"")+'</span>'; }
+
+/* ============================================================
+   SEED DATA
+=============================================================== */
+function seedData(){
+  var now = Date.now();
+  function daysAgo(n){ return new Date(now - n*86400000).toISOString(); }
+
+  var feeTemplates = [
+    {id:"ft1", name:"Tuition Fee", category:"Tuition", defaultAmount:28000},
+    {id:"ft2", name:"Miscellaneous Fee", category:"Miscellaneous", defaultAmount:4500},
+    {id:"ft3", name:"Laboratory Fee", category:"Laboratory", defaultAmount:3200},
+    {id:"ft4", name:"Library Fee", category:"Miscellaneous", defaultAmount:800},
+    {id:"ft5", name:"Athletics & Culture Fee", category:"Miscellaneous", defaultAmount:600},
+    {id:"ft6", name:"ID & Insurance", category:"Miscellaneous", defaultAmount:500}
+  ];
+
+  var students = [
+    {
+      id:"s1", studentId:"2023-00145", password:"student123",
+      name:"Andrea Villanueva", program:"BS Information Technology", year:"3rd Year",
+      email:"andrea.villanueva@myschool.edu.ph", phone:"0917 234 5511",
+      fees:[
+        {id:uid("f"), name:"Tuition Fee", category:"Tuition", amount:28000},
+        {id:uid("f"), name:"Miscellaneous Fee", category:"Miscellaneous", amount:4500},
+        {id:uid("f"), name:"Laboratory Fee", category:"Laboratory", amount:3200},
+        {id:uid("f"), name:"Library Fee", category:"Miscellaneous", amount:800},
+        {id:uid("f"), name:"Athletics & Culture Fee", category:"Miscellaneous", amount:600},
+        {id:uid("f"), name:"ID & Insurance", category:"Miscellaneous", amount:500}
+      ],
+      adjustments:[
+        {id:uid("adj"), date:daysAgo(58), type:"credit", amount:1000, note:"Early enrollment discount"}
+      ],
+      payments:[
+        {id:uid("p"), date:daysAgo(55), method:"GCash", amount:20000, refNo:"GC-8827461039", receiptNo:"OR-2026-1001", status:"Completed", note:""},
+        {id:uid("p"), date:daysAgo(21), method:"GCash", amount:10000, refNo:"GC-1140923375", receiptNo:"OR-2026-1004", status:"Completed", note:""}
+      ]
+    },
+    {
+      id:"s2", studentId:"2023-00089", password:"student123",
+      name:"Marcus Reyes", program:"BS Accountancy", year:"2nd Year",
+      email:"marcus.reyes@myschool.edu.ph", phone:"0928 118 4432",
+      fees:[
+        {id:uid("f"), name:"Tuition Fee", category:"Tuition", amount:26000},
+        {id:uid("f"), name:"Miscellaneous Fee", category:"Miscellaneous", amount:4500},
+        {id:uid("f"), name:"Library Fee", category:"Miscellaneous", amount:800},
+        {id:uid("f"), name:"Athletics & Culture Fee", category:"Miscellaneous", amount:600},
+        {id:uid("f"), name:"ID & Insurance", category:"Miscellaneous", amount:500}
+      ],
+      adjustments:[],
+      payments:[
+        {id:uid("p"), date:daysAgo(40), method:"PayPal", amount:32400, refNo:"PP-4471029238", receiptNo:"OR-2026-1002", status:"Completed", note:""}
+      ]
+    },
+    {
+      id:"s3", studentId:"2022-00212", password:"student123",
+      name:"Julienne Santos", program:"BS Nursing", year:"4th Year",
+      email:"julienne.santos@myschool.edu.ph", phone:"0995 502 7761",
+      fees:[
+        {id:uid("f"), name:"Tuition Fee", category:"Tuition", amount:30000},
+        {id:uid("f"), name:"Miscellaneous Fee", category:"Miscellaneous", amount:4500},
+        {id:uid("f"), name:"Related Learning Experience Fee", category:"Laboratory", amount:5000},
+        {id:uid("f"), name:"Library Fee", category:"Miscellaneous", amount:800},
+        {id:uid("f"), name:"Athletics & Culture Fee", category:"Miscellaneous", amount:600},
+        {id:uid("f"), name:"ID & Insurance", category:"Miscellaneous", amount:500}
+      ],
+      adjustments:[
+        {id:uid("adj"), date:daysAgo(30), type:"charge", amount:650, note:"NSTP uniform fee"}
+      ],
+      payments:[
+        {id:uid("p"), date:daysAgo(38), method:"Cash", amount:15000, refNo:"CASH-COUNTER", receiptNo:"OR-2026-1003", status:"Completed", note:"Recorded at cashier window"},
+        {id:uid("p"), date:daysAgo(12), method:"GCash", amount:10000, refNo:"GC-7729310084", receiptNo:"OR-2026-1005", status:"Completed", note:""}
+      ]
+    }
+  ];
+
+  return {
+    school:{name:"PALAWAN INSTITUTE COLLEGE", term:"A.Y. 2026\u20132027 \u2014 1st Semester"},
+    admin:{username:"admin", password:"admin123", name:"Registrar & Accounts Office"},
+    feeTemplates: feeTemplates,
+    students: students,
+    qrRequests: [],
+    receiptSeq: 1006
+  };
+}
+
+/* ============================================================
+   STATE + PERSISTENCE
+=============================================================== */
+var data = loadData();
+if (!data.qrRequests) data.qrRequests = [];
+
+function loadData(){
+  try{
+    var raw = localStorage.getItem(DB_KEY);
+    if (raw) return JSON.parse(raw);
+  }catch(e){}
+  var seeded = seedData();
+  try{ localStorage.setItem(DB_KEY, JSON.stringify(seeded)); }catch(e){}
+  return seeded;
+}
+function saveLocal(){
+  try{ localStorage.setItem(DB_KEY, JSON.stringify(data)); }catch(e){ console.error("local save failed", e); }
+}
+
+/* ---- Shared database (Artifact `db` capability) ----
+   The whole dataset lives as ONE JSON document (system/data) in the
+   artifact's real, persistent database, shared by every signed-in
+   viewer of this page. localStorage is kept only as an instant-paint
+   cache for the first render and as an offline fallback when db is
+   unavailable (e.g. before the page is published, or this view was
+   not granted the capability). */
+var dbNS = null;
+var dbDocRef = null;
+var dbWriteChain = Promise.resolve();
+var dbAvailable = false;
+
+function saveData(){
+  saveLocal();
+  if (dbAvailable && dbDocRef){
+    dbWriteChain = dbWriteChain.then(function(){ return dbDocRef.set(data); })
+      .catch(function(e){ console.error("db write failed", e); });
+  }
+}
+
+function initDb(){
+  if (!window.claude || typeof window.claude.use !== "function") return;
+  window.claude.use("db").then(function(ns){
+    if (!ns) return;
+    dbNS = ns;
+    dbDocRef = ns.doc("system/data");
+    return dbDocRef.get();
+  }).then(function(snap){
+    if (!snap) return;
+    if (snap.exists && snap.data()){
+      var remote = snap.data();
+      if (remote && remote.students) data = remote;
+      if (!data.qrRequests) data.qrRequests = [];
+      saveLocal();
+    } else {
+      dbDocRef.set(data).catch(function(e){ console.error("db seed failed", e); });
+    }
+    dbAvailable = true;
+    render();
+    dbDocRef.onSnapshot(function(snap2){
+      if (!snap2.exists) return;
+      var incoming = snap2.data();
+      if (!incoming || !incoming.students) return;
+      data = incoming;
+      if (!data.qrRequests) data.qrRequests = [];
+      saveLocal();
+      render();
+    }, function(err){ console.error("db subscribe error", err); });
+  }).catch(function(e){ console.error("db init failed", e); });
+
+  window.claude.use("downloads").then(function(ns){ window.__downloadsNS = ns; }).catch(function(){});
+}
+
+var state = {
+  session: null,
+  studentTab: "overview",
+  adminTab: "overview",
+  adminDrawerOpen: false,
+  selectedStudentId: null,
+  studentSearch: "",
+  paymentFilter: {method:"all", search:""},
+  reportFrom:"", reportTo:"",
+  pay: null, // {method, amount, step}
+  modal: null, // {type, ...}
+  toast: null,
+  loginRole: "student",
+  loginError: ""
+};
+
+try{
+  var rawSession = sessionStorage.getItem(SESSION_KEY);
+  if (rawSession) state.session = JSON.parse(rawSession);
+}catch(e){}
+
+function saveSession(){
+  try{
+    if (state.session) sessionStorage.setItem(SESSION_KEY, JSON.stringify(state.session));
+    else sessionStorage.removeItem(SESSION_KEY);
+  }catch(e){}
+}
+
+function showToast(msg){
+  state.toast = msg;
+  render();
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(function(){ state.toast = null; render(); }, 2400);
+}
+
+/* ============================================================
+   DOMAIN HELPERS
+=============================================================== */
+function getStudent(id){
+  for (var i=0;i<data.students.length;i++) if (data.students[i].id === id) return data.students[i];
+  return null;
+}
+function currentStudent(){
+  if (!state.session || state.session.role !== "student") return null;
+  return getStudent(state.session.studentId);
+}
+function computeTotals(student){
+  var totalFees = 0;
+  student.fees.forEach(function(f){ totalFees += Number(f.amount)||0; });
+  var adj = 0;
+  student.adjustments.forEach(function(a){ adj += (a.type === "credit" ? -1 : 1) * (Number(a.amount)||0); });
+  var assessment = totalFees + adj;
+  var paid = 0;
+  student.payments.forEach(function(p){ if (p.status === "Completed") paid += Number(p.amount)||0; });
+  var balance = assessment - paid;
+  return {totalFees:totalFees, adjustments:adj, assessment:assessment, paid:paid, balance:balance};
+}
+function initials(name){
+  var parts = String(name).trim().split(/\s+/);
+  var s = (parts[0]?parts[0][0]:"") + (parts.length>1?parts[parts.length-1][0]:"");
+  return s.toUpperCase();
+}
+function allPayments(){
+  var out = [];
+  data.students.forEach(function(st){
+    st.payments.forEach(function(p){
+      out.push(Object.assign({}, p, {studentId:st.id, studentName:st.name, studentNo:st.studentId}));
+    });
+  });
+  out.sort(function(a,b){ return new Date(b.date) - new Date(a.date); });
+  return out;
+}
+function nextReceiptNo(){
+  var n = data.receiptSeq++;
+  return "OR-2026-" + n;
+}
+function receiptFromPayment(stu, payment){
+  var idx = stu.payments.indexOf(payment);
+  var runningPaid = 0;
+  stu.payments.forEach(function(pp,i){ if (i<=idx && pp.status==="Completed") runningPaid += pp.amount; });
+  var t = computeTotals(stu);
+  var balanceAfter = t.assessment - runningPaid;
+  return {
+    id: payment.id, receiptNo: payment.receiptNo, date: payment.date, studentName: stu.name, studentNo: stu.studentId,
+    method: payment.method, refNo: payment.refNo, amount: payment.amount, balanceAfter: balanceAfter, status: payment.status
+  };
+}
+
+/* ============================================================
+   RENDER ROOT
+=============================================================== */
+function render(){
+  var root = document.getElementById("app");
+  document.body.classList.remove("has-mobilebar");
+  if (!state.session){
+    root.innerHTML = renderLogin();
+  } else if (state.session.role === "student"){
+    document.body.classList.add("has-mobilebar");
+    root.innerHTML = renderStudentApp();
+  } else {
+    root.innerHTML = renderAdminApp();
+  }
+  if (state.modal) root.insertAdjacentHTML("beforeend", renderModal());
+  if (state.toast) root.insertAdjacentHTML("beforeend", '<div class="toast">'+ic("check")+esc(state.toast)+'</div>');
+  mountQrIfNeeded();
+}
+
+function mountQrIfNeeded(){
+  if (state.session && state.session.role === "student" && state.studentTab === "pay" &&
+      state.pay && state.pay.step === "qr-wait" && state.pay.qrPayload){
+    var box = document.getElementById("qrCodeBox");
+    if (box && window.QRCode){
+      box.innerHTML = "";
+      try{
+        new QRCode(box, {text: state.pay.qrPayload, width:176, height:176, colorDark:"#12181F", colorLight:"#ffffff"});
+      }catch(e){ box.textContent = "QR unavailable"; }
+    } else if (box){
+      box.textContent = "QR code";
+    }
+  }
+}
+
+/* ============================================================
+   LOGIN VIEW
+=============================================================== */
+function renderLogin(){
+  var role = state.loginRole;
+  return ''+
+  '<div class="login-wrap">'+
+    '<div class="login-card">'+
+      '<div class="login-hero">'+
+        '<div>'+
+          '<div class="brand"><span class="brand-mark">L</span><span>Ledger</span></div>'+
+          '<h1 style="margin-top:26px;">Student Accounts &amp; Payments, kept in the open.</h1>'+
+          '<p class="sub" style="margin-top:12px;">'+esc(data.school.name)+' \u00B7 '+esc(data.school.term)+'. View your assessment, settle fees through GCash, PayPal, or a scannable QR code, and keep every receipt in one place.</p>'+
+        '</div>'+
+        '<div class="login-stat-row">'+
+          '<div class="login-stat"><b>'+data.students.length+'</b><span>Active accounts</span></div>'+
+          '<div class="login-stat"><b>3</b><span>Payment channels</span></div>'+
+          '<div class="login-stat"><b>24/7</b><span>Self-service</span></div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="login-panel">'+
+        '<div class="role-tabs">'+
+          '<button data-action="set-login-role" data-role="student" class="'+(role==="student"?"active":"")+'">Student</button>'+
+          '<button data-action="set-login-role" data-role="admin" class="'+(role==="admin"?"active":"")+'">Administrator</button>'+
+        '</div>'+
+        '<h2>'+(role==="student"?"Sign in to your account":"Admin dashboard sign in")+'</h2>'+
+        '<p class="sub">'+(role==="student"?"Use your student number and password.":"For registrar and accounts office staff.")+'</p>'+
+        '<div class="login-error'+(state.loginError?" show":"")+'">'+esc(state.loginError)+'</div>'+
+        '<form data-form="login">'+
+          (role==="student" ? (
+            '<div class="field"><label>Student Number</label><input name="id" placeholder="e.g. 2023-00145" autocomplete="username" required></div>'
+          ) : (
+            '<div class="field"><label>Username</label><input name="id" placeholder="admin" autocomplete="username" required></div>'
+          )) +
+          '<div class="field"><label>Password</label><input name="password" type="password" placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" autocomplete="current-password" required></div>'+
+          '<button type="submit" class="btn btn-primary btn-block">'+ic("lock")+' Sign in securely</button>'+
+        '</form>'+
+        '<div class="demo-box">'+
+          (role==="student" ?
+            '<b>Demo accounts</b><br>2023-00145 / student123 (Andrea)<br>2023-00089 / student123 (Marcus)<br>2022-00212 / student123 (Julienne)'
+            :
+            '<b>Demo admin</b><br>admin / admin123')+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+/* ============================================================
+   STUDENT APP
+=============================================================== */
+var STU_TABS = [
+  {key:"overview", label:"Overview", icon:"home"},
+  {key:"fees", label:"Fees", icon:"wallet"},
+  {key:"pay", label:"Pay", icon:"card"},
+  {key:"history", label:"History", icon:"clock"},
+  {key:"profile", label:"Profile", icon:"user"}
+];
+
+function renderStudentApp(){
+  var stu = currentStudent();
+  if (!stu){ state.session = null; saveSession(); return renderLogin(); }
+  var tab = state.studentTab;
+  var tabsHtml = STU_TABS.map(function(t){
+    return '<button data-action="student-tab" data-tab="'+t.key+'" class="'+(tab===t.key?"active":"")+'">'+ic(t.icon)+'<span>'+t.label+'</span></button>';
+  }).join("");
+  var mobileTabsHtml = STU_TABS.map(function(t){
+    return '<button data-action="student-tab" data-tab="'+t.key+'" class="'+(tab===t.key?"active":"")+'">'+ic(t.icon)+'<span>'+t.label+'</span></button>';
+  }).join("");
+
+  var content = "";
+  if (tab==="overview") content = renderStuOverview(stu);
+  else if (tab==="fees") content = renderStuFees(stu);
+  else if (tab==="pay") content = renderStuPay(stu);
+  else if (tab==="history") content = renderStuHistory(stu);
+  else if (tab==="profile") content = renderStuProfile(stu);
+
+  return ''+
+  '<div class="topbar">'+
+    '<div class="topbar-inner">'+
+      '<div class="brand-sm"><span class="brand-mark">L</span><span>'+esc(data.school.name)+'</span></div>'+
+      '<div class="who">'+
+        '<div style="text-align:right;">'+
+          '<div class="who-name">'+esc(stu.name)+'</div>'+
+          '<div class="who-sub">'+esc(stu.studentId)+'</div>'+
+        '</div>'+
+        '<div class="avatar">'+initials(stu.name)+'</div>'+
+        '<button class="icon-btn" data-action="logout" title="Log out" aria-label="Log out">'+ic("logout")+'</button>'+
+      '</div>'+
+    '</div>'+
+    '<nav class="stu-tabs">'+tabsHtml+'</nav>'+
+  '</div>'+
+  '<div class="container page">'+content+'</div>'+
+  '<nav class="mobile-tabbar">'+mobileTabsHtml+'</nav>';
+}
+
+function renderStuOverview(stu){
+  var t = computeTotals(stu);
+  var recent = stu.payments.slice().sort(function(a,b){return new Date(b.date)-new Date(a.date);}).slice(0,3);
+  return ''+
+  '<div class="section-title"><h2>Welcome back, '+esc(stu.name.split(" ")[0])+'</h2><span class="sub">'+esc(stu.program)+' \u00B7 '+esc(stu.year)+'</span></div>'+
+  '<div class="ledger-grid">'+
+    '<div class="ledger-cell"><div class="lbl">Total Assessment</div><div class="val num">'+fmtMoney(t.assessment)+'</div><div class="fine">'+data.school.term+'</div></div>'+
+    '<div class="ledger-cell"><div class="lbl">Total Paid</div><div class="val num pos">'+fmtMoney(t.paid)+'</div><div class="fine">'+stu.payments.filter(function(p){return p.status==="Completed";}).length+' payment(s) recorded</div></div>'+
+    '<div class="ledger-cell"><div class="lbl">Remaining Balance</div><div class="val num '+(t.balance>0?"neg":"pos")+'">'+fmtMoney(Math.max(t.balance,0))+'</div><div class="fine">'+(t.balance<=0?"Fully settled":"Due before finals week")+'</div></div>'+
+  '</div>'+
+  (t.balance>0 ?
+    '<div class="panel"><div class="panel-body pad" style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;">'+
+      '<div><h3 style="font-size:15px; margin-bottom:4px;">You have an outstanding balance</h3><p class="sub muted">Pay online anytime via GCash or PayPal \u2014 your balance updates immediately.</p></div>'+
+      '<button class="btn btn-primary" data-action="student-tab" data-tab="pay">'+ic("card")+' Pay now</button>'+
+    '</div></div>' : ''
+  )+
+  '<div class="panel">'+
+    '<div class="panel-head"><h3>Recent payments</h3><button class="btn btn-ghost btn-sm" data-action="student-tab" data-tab="history">View all</button></div>'+
+    '<div class="panel-body pad">'+
+      (recent.length? recent.map(renderPaymentRow).join("") : emptyState("inbox","No payments yet.")) +
+    '</div>'+
+  '</div>';
+}
+
+function renderPaymentRow(p){
+  var chipClass = p.method==="GCash"?"gcash":(p.method==="PayPal"?"paypal":(p.method==="QR"?"qr":"cash"));
+  var statusBadge = p.status==="Voided" ? '<span class="badge voided">Voided</span>' : '<span class="badge paid">Completed</span>';
+  return '<div class="row-flex">'+
+    '<div style="display:flex; align-items:center; gap:12px;">'+
+      '<span class="method-chip '+chipClass+'" style="padding:4px 9px; font-size:11.5px;">'+esc(p.method)+'</span>'+
+      '<div><div style="font-weight:600; font-size:13.5px;">'+fmtMoney(p.amount)+'</div><div class="small muted">'+fmtDate(p.date)+' \u00B7 '+esc(p.refNo)+'</div></div>'+
+    '</div>'+
+    '<div style="display:flex; align-items:center; gap:10px;">'+statusBadge+
+      '<button class="btn btn-ghost btn-sm" data-action="view-receipt" data-pid="'+p.id+'" data-sid="'+(p.studentId||"")+'">'+ic("receipt")+'</button>'+
+    '</div>'+
+  '</div>';
+}
+
+function emptyState(icon, text){
+  return '<div class="empty-state">'+ic(icon)+'<p>'+esc(text)+'</p></div>';
+}
+
+function renderStuFees(stu){
+  var t = computeTotals(stu);
+  var feeRows = stu.fees.map(function(f){
+    return '<tr><td>'+esc(f.name)+'</td><td class="small muted">'+esc(f.category)+'</td><td class="amt num">'+fmtMoney(f.amount)+'</td></tr>';
+  }).join("");
+  var adjRows = stu.adjustments.map(function(a){
+    return '<tr><td>'+esc(a.note)+'</td><td class="small muted">'+fmtDate(a.date)+'</td><td class="amt num" style="color:'+(a.type==="credit"?"var(--primary-dark)":"var(--danger)")+';">'+(a.type==="credit"?"\u2212":"+")+fmtMoney(a.amount)+'</td></tr>';
+  }).join("");
+  return ''+
+  '<div class="section-title"><h2>Fees &amp; Balance</h2><span class="sub">Itemized assessment for '+data.school.term+'</span></div>'+
+  '<div class="panel"><div class="panel-head"><h3>Assessed fees</h3></div>'+
+    '<div class="panel-body scroll-x"><table class="ledger-table"><thead><tr><th>Item</th><th>Category</th><th class="amt">Amount</th></tr></thead><tbody>'+feeRows+'</tbody>'+
+    '<tfoot><tr><td colspan="2" style="font-weight:700;">Subtotal</td><td class="amt num" style="font-weight:700;">'+fmtMoney(t.totalFees)+'</td></tr></tfoot></table></div>'+
+  '</div>'+
+  (stu.adjustments.length ? '<div class="panel"><div class="panel-head"><h3>Adjustments</h3></div>'+
+    '<div class="panel-body scroll-x"><table class="ledger-table"><thead><tr><th>Description</th><th>Date</th><th class="amt">Amount</th></tr></thead><tbody>'+adjRows+'</tbody></table></div></div>' : '')+
+  '<div class="ledger-grid" style="margin-top:6px;">'+
+    '<div class="ledger-cell"><div class="lbl">Total Assessment</div><div class="val num">'+fmtMoney(t.assessment)+'</div></div>'+
+    '<div class="ledger-cell"><div class="lbl">Amount Paid</div><div class="val num pos">'+fmtMoney(t.paid)+'</div></div>'+
+    '<div class="ledger-cell"><div class="lbl">Remaining Balance</div><div class="val num '+(t.balance>0?"neg":"pos")+'">'+fmtMoney(Math.max(t.balance,0))+'</div></div>'+
+  '</div>';
+}
+
+function renderStuPay(stu){
+  var t = computeTotals(stu);
+  if (t.balance <= 0){
+    return '<div class="section-title"><h2>Pay Fees</h2></div>'+
+      '<div class="panel"><div class="panel-body pad">'+emptyState("check","Your account is fully settled \u2014 nothing due right now.")+'</div></div>';
+  }
+  if (!state.pay) state.pay = {method:null, amount:t.balance, step:"select"};
+  var pay = state.pay;
+
+  if (pay.step === "qr-wait" && pay.requestId){
+    var liveReq = data.qrRequests.filter(function(r){return r.id===pay.requestId;})[0];
+    if (liveReq && liveReq.status === "completed" && liveReq.paymentId){
+      var paidRecord = stu.payments.filter(function(p){return p.id===liveReq.paymentId;})[0];
+      if (paidRecord){
+        pay.step = "success";
+        pay.receipt = receiptFromPayment(stu, paidRecord);
+      }
+    }
+  }
+
+  if (pay.step === "gateway") return renderGateway(stu, pay, t);
+  if (pay.step === "qr-wait") return renderQrWait(stu, pay, t);
+  if (pay.step === "success") return renderPaySuccess(stu, pay);
+
+  return ''+
+  '<div class="section-title"><h2>Pay Fees</h2><span class="sub">Outstanding balance: <b class="num">'+fmtMoney(t.balance)+'</b></span></div>'+
+  '<div class="panel"><div class="panel-body pad">'+
+    '<div class="field input-money" style="max-width:280px;">'+
+      '<label>Amount to pay</label>'+
+      '<input type="number" min="1" max="'+t.balance+'" step="0.01" id="payAmountInput" value="'+pay.amount+'">'+
+      '<div class="hint">Maximum: '+fmtMoney(t.balance)+'</div>'+
+      '<div class="error-text" id="payAmountError">Enter an amount between \u20B11 and '+fmtMoney(t.balance)+'.</div>'+
+    '</div>'+
+    '<button class="btn btn-ghost btn-sm" data-action="pay-fill-full" style="margin-bottom:6px;">Pay full balance</button>'+
+
+    '<div style="margin-top:18px;">'+
+      '<label style="font-size:12.5px; font-weight:600; color:var(--ink-700);">Choose payment method</label>'+
+      '<div class="method-grid">'+
+        '<button type="button" class="method-card '+(pay.method==="GCash"?"selected":"")+'" data-action="pay-select-method" data-method="GCash">'+
+          '<span class="method-chip gcash">'+ic("card")+' GCash</span>'+
+          '<span class="desc">Pay using your GCash wallet balance or linked cards.</span>'+
+        '</button>'+
+        '<button type="button" class="method-card '+(pay.method==="PayPal"?"selected":"")+'" data-action="pay-select-method" data-method="PayPal">'+
+          '<span class="method-chip paypal">'+ic("card")+' PayPal</span>'+
+          '<span class="desc">Pay using your PayPal balance, card, or bank account.</span>'+
+        '</button>'+
+        '<button type="button" class="method-card '+(pay.method==="QR"?"selected":"")+'" data-action="pay-select-method" data-method="QR">'+
+          '<span class="method-chip qr">'+ic("card")+' Scan QR</span>'+
+          '<span class="desc">Generate a QR code for the cashier or admin to scan on-site.</span>'+
+        '</button>'+
+      '</div>'+
+    '</div>'+
+    '<button class="btn btn-primary btn-block" id="payProceedBtn" data-action="pay-proceed" '+(!pay.method?"disabled":"")+'>Proceed to pay '+fmtMoney(pay.amount||0)+'</button>'+
+    '<p class="small muted" style="text-align:center; margin-top:10px;">'+ic("lock")+' Simulated secure checkout \u2014 demo mode, no real funds are moved.</p>'+
+  '</div></div>';
+}
+
+function renderQrWait(stu, pay, t){
+  var req = data.qrRequests.filter(function(r){return r.id===pay.requestId;})[0];
+  if (req && req.status === "cancelled"){
+    return '<div class="qr-shell"><p class="muted" style="margin-bottom:16px;">This QR payment request was cancelled.</p>'+
+      '<button class="btn btn-primary" data-action="pay-new">Back to overview</button></div>';
+  }
+  return '<div class="qr-shell">'+
+    '<div class="demo-banner" style="border-radius:8px; margin-bottom:16px;">DEMO MODE \u2014 SIMULATED PAYMENT</div>'+
+    '<h3 style="font-size:16px; margin-bottom:4px;">Scan to pay '+fmtMoney(pay.amount)+'</h3>'+
+    '<p class="sub muted" style="margin-bottom:18px;">Show this code to the cashier, or have an admin scan it under Payments \u2192 Scan QR.</p>'+
+    '<div class="qr-box" id="qrCodeBox"></div>'+
+    '<p class="small muted" style="margin:14px 0 2px;">Request ref: <b class="num">'+esc(req?req.refNo:"")+'</b></p>'+
+    '<p class="small" style="margin-bottom:18px;"><span class="qr-waiting-dot"></span>Waiting for confirmation\u2026</p>'+
+    '<div style="display:flex; gap:10px; justify-content:center;">'+
+      '<button class="btn btn-ghost" data-action="pay-cancel">Cancel</button>'+
+      '<button class="btn btn-ghost" data-action="qr-simulate-scan" data-id="'+(req?req.id:"")+'" title="For solo demo/testing">Demo: simulate cashier scan</button>'+
+    '</div>'+
+  '</div>';
+}
+
+function renderGateway(stu, pay, t){
+  var isGcash = pay.method === "GCash";
+  var head = isGcash ? "gcash" : "paypal";
+  var name = isGcash ? "GCash" : "PayPal";
+  if (pay.processing){
+    return '<div class="gateway-shell">'+
+      '<div class="demo-banner">DEMO MODE \u2014 SIMULATED PAYMENT</div>'+
+      '<div class="gateway-head '+head+'"><div class="gname">'+name+'</div><div class="gamt num">'+fmtMoney(pay.amount)+'</div></div>'+
+      '<div class="gateway-body">'+
+        '<p style="text-align:center; font-weight:600; font-size:14px;">Processing your payment\u2026</p>'+
+        '<div class="dots-spin"><span></span><span></span><span></span></div>'+
+        '<p class="small muted" style="text-align:center;">Please do not close this window.</p>'+
+      '</div></div>';
+  }
+  return '<div class="gateway-shell">'+
+    '<div class="demo-banner">DEMO MODE \u2014 SIMULATED PAYMENT</div>'+
+    '<div class="gateway-head '+head+'"><div class="gname">'+name+'</div><div class="gamt num">'+fmtMoney(pay.amount)+'</div></div>'+
+    '<div class="gateway-body">'+
+      (isGcash ?
+        '<div class="field"><label>Mobile Number</label><input value="0917 2** **11" disabled></div>'+
+        '<div class="field"><label>MPIN</label><input type="password" placeholder="Enter 6-digit MPIN" id="gwInput" maxlength="6"></div>'
+        :
+        '<div class="field"><label>Email address</label><input value="'+esc(stu.email)+'" disabled></div>'+
+        '<div class="field"><label>PayPal password</label><input type="password" placeholder="Enter password" id="gwInput"></div>'
+      )+
+      '<button class="btn btn-primary btn-block" data-action="pay-confirm-gateway">Confirm &amp; Pay '+fmtMoney(pay.amount)+'</button>'+
+      '<button class="btn btn-ghost btn-block" style="margin-top:8px;" data-action="pay-cancel">Cancel</button>'+
+    '</div></div>';
+}
+
+function renderPaySuccess(stu, pay){
+  var receipt = pay.receipt;
+  return '<div style="max-width:420px; margin:0 auto;">'+
+    '<div class="success-check">'+ic("check")+'</div>'+
+    '<h3 style="text-align:center; font-size:19px; margin-bottom:4px;">Payment successful</h3>'+
+    '<p class="sub muted" style="text-align:center; margin-bottom:22px;">Your balance has been updated automatically.</p>'+
+    renderReceiptCard(receipt)+
+    '<div class="receipt-foot no-print" style="max-width:420px; margin:14px auto 0;">'+
+      '<button class="btn btn-ghost" data-action="print-receipt">'+ic("print")+' Print</button>'+
+      '<button class="btn btn-ghost" data-action="download-receipt" data-rid="'+receipt.id+'">'+ic("download")+' Save</button>'+
+      '<button class="btn btn-primary" data-action="pay-new">Done</button>'+
+    '</div>'+
+  '</div>';
+}
+
+function renderReceiptCard(r){
+  return '<div class="receipt printable">'+
+    '<div class="receipt-top"><div class="rmark">L</div><h3>'+esc(data.school.name)+'</h3><div class="sub">Official Digital Receipt</div></div>'+
+    '<div class="receipt-body">'+
+      '<div class="receipt-row"><span>Receipt No.</span><b>'+esc(r.receiptNo)+'</b></div>'+
+      '<div class="receipt-row"><span>Date</span><b>'+fmtDateTime(r.date)+'</b></div>'+
+      '<div class="receipt-row"><span>Student</span><b>'+esc(r.studentName)+'</b></div>'+
+      '<div class="receipt-row"><span>Student No.</span><b>'+esc(r.studentNo)+'</b></div>'+
+      '<div class="receipt-row"><span>Payment Method</span><b>'+esc(r.method)+'</b></div>'+
+      '<div class="receipt-row"><span>Reference No.</span><b>'+esc(r.refNo)+'</b></div>'+
+      '<div class="receipt-amt"><div class="amt num">'+fmtMoney(r.amount)+'</div><div class="lbl">Amount Paid</div></div>'+
+      '<div class="receipt-row"><span>Remaining Balance</span><b>'+fmtMoney(Math.max(r.balanceAfter,0))+'</b></div>'+
+      '<div class="receipt-row"><span>Status</span><b style="color:var(--primary-dark);">'+esc(r.status)+'</b></div>'+
+    '</div>'+
+  '</div>';
+}
+
+function renderStuHistory(stu){
+  var rows = stu.payments.slice().sort(function(a,b){return new Date(b.date)-new Date(a.date);}).map(function(p){
+    var badge = p.status==="Voided" ? '<span class="badge voided">Voided</span>' : '<span class="badge paid">Completed</span>';
+    return '<tr class="clickable" data-action="view-receipt" data-pid="'+p.id+'" data-sid="'+stu.id+'">'+
+      '<td>'+fmtDate(p.date)+'</td><td>'+esc(p.method)+'</td><td class="small muted">'+esc(p.refNo)+'</td>'+
+      '<td class="amt num">'+fmtMoney(p.amount)+'</td><td>'+badge+'</td></tr>';
+  }).join("");
+  return '<div class="section-title"><h2>Payment History</h2><span class="sub">'+stu.payments.length+' transaction(s)</span></div>'+
+    '<div class="panel"><div class="panel-body scroll-x">'+
+    (stu.payments.length ?
+      '<table class="ledger-table"><thead><tr><th>Date</th><th>Method</th><th>Reference</th><th class="amt">Amount</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table>'
+      : emptyState("inbox","No payment history yet."))+
+    '</div></div>';
+}
+
+function renderStuProfile(stu){
+  return '<div class="section-title"><h2>Profile</h2></div>'+
+  '<div class="panel"><div class="panel-body pad">'+
+    '<div style="display:flex; align-items:center; gap:16px; margin-bottom:22px;">'+
+      '<div class="avatar" style="width:56px; height:56px; font-size:19px;">'+initials(stu.name)+'</div>'+
+      '<div><h3 style="font-size:17px;">'+esc(stu.name)+'</h3><p class="sub muted">'+esc(stu.program)+' \u00B7 '+esc(stu.year)+'</p></div>'+
+    '</div>'+
+    '<div class="kv-grid">'+
+      '<div><div class="k">Student Number</div><div class="v">'+esc(stu.studentId)+'</div></div>'+
+      '<div><div class="k">Program</div><div class="v">'+esc(stu.program)+'</div></div>'+
+      '<div><div class="k">Year Level</div><div class="v">'+esc(stu.year)+'</div></div>'+
+      '<div><div class="k">Term</div><div class="v">'+esc(data.school.term)+'</div></div>'+
+    '</div>'+
+    '<hr class="divider" style="margin:20px 0;">'+
+    '<form data-form="update-profile">'+
+      '<div class="field-row">'+
+        '<div class="field"><label>Email address</label><input name="email" type="email" value="'+esc(stu.email)+'" required></div>'+
+        '<div class="field"><label>Mobile number</label><input name="phone" value="'+esc(stu.phone)+'" required></div>'+
+      '</div>'+
+      '<button class="btn btn-primary" type="submit">Save contact details</button>'+
+    '</form>'+
+  '</div></div>';
+}
+
+/* ============================================================
+   ADMIN APP
+=============================================================== */
+var ADM_TABS = [
+  {key:"overview", label:"Overview", icon:"home"},
+  {key:"students", label:"Students", icon:"users"},
+  {key:"fees", label:"Fee Templates", icon:"tag"},
+  {key:"payments", label:"Payments", icon:"receipt"},
+  {key:"reports", label:"Reports", icon:"chart"}
+];
+
+function renderAdminApp(){
+  var tab = state.adminTab;
+  var navHtml = ADM_TABS.map(function(t){
+    return '<button data-action="admin-tab" data-tab="'+t.key+'" class="'+(tab===t.key?"active":"")+'">'+ic(t.icon)+'<span>'+t.label+'</span></button>';
+  }).join("");
+
+  var content = "";
+  if (tab==="overview") content = renderAdmOverview();
+  else if (tab==="students") content = state.selectedStudentId ? renderAdmStudentDetail(getStudent(state.selectedStudentId)) : renderAdmStudents();
+  else if (tab==="fees") content = renderAdmFees();
+  else if (tab==="payments") content = renderAdmPayments();
+  else if (tab==="reports") content = renderAdmReports();
+
+  return ''+
+  '<div class="admin-drawer-backdrop '+(state.adminDrawerOpen?"show":"")+'" data-action="admin-drawer-close"></div>'+
+  '<div class="admin-shell">'+
+    '<aside class="admin-sidebar '+(state.adminDrawerOpen?"open":"")+'">'+
+      '<div class="brand"><span class="brand-mark">L</span><span>Ledger Admin</span></div>'+
+      '<nav class="admin-nav">'+navHtml+'</nav>'+
+      '<div class="admin-side-foot">'+esc(data.school.name)+'<br>'+esc(data.school.term)+'</div>'+
+    '</aside>'+
+    '<div class="admin-main">'+
+      '<div class="topbar"><div class="topbar-inner">'+
+        '<div style="display:flex; align-items:center; gap:10px;">'+
+          '<button class="icon-btn only-mobile-flex" data-action="admin-drawer-toggle" aria-label="Menu">'+ic("menu")+'</button>'+
+          '<h2 style="font-size:16px;">'+(ADM_TABS.filter(function(t){return t.key===tab;})[0]||{}).label+'</h2>'+
+        '</div>'+
+        '<div class="who">'+
+          '<div style="text-align:right;"><div class="who-name">'+esc(data.admin.name)+'</div><div class="who-sub">Administrator</div></div>'+
+          '<div class="avatar">AD</div>'+
+          '<button class="icon-btn" data-action="logout" title="Log out" aria-label="Log out">'+ic("logout")+'</button>'+
+        '</div>'+
+      '</div></div>'+
+      '<div class="admin-content">'+content+'</div>'+
+    '</div>'+
+  '</div>';
+}
+
+function orgTotals(){
+  var students=0, assessed=0, collected=0, outstanding=0;
+  data.students.forEach(function(st){
+    students++;
+    var t = computeTotals(st);
+    assessed += t.assessment; collected += t.paid; outstanding += Math.max(t.balance,0);
+  });
+  return {students:students, assessed:assessed, collected:collected, outstanding:outstanding,
+    rate: assessed>0 ? Math.round((collected/assessed)*100) : 0};
+}
+
+function methodBreakdown(fromDate, toDate){
+  var totals = {GCash:0, PayPal:0, Cash:0};
+  allPayments().forEach(function(p){
+    if (p.status !== "Completed") return;
+    var d = new Date(p.date);
+    if (fromDate && d < fromDate) return;
+    if (toDate && d > toDate) return;
+    if (totals[p.method] === undefined) totals[p.method] = 0;
+    totals[p.method] += p.amount;
+  });
+  return totals;
+}
+
+function renderAdmOverview(){
+  var t = orgTotals();
+  var recent = allPayments().slice(0,6);
+  var methods = methodBreakdown();
+  var maxM = Math.max(1, methods.GCash, methods.PayPal, methods.Cash);
+  var colors = {GCash:"var(--gcash)", PayPal:"var(--paypal)", QR:"var(--primary)", Cash:"var(--amber)"};
+
+  return ''+
+  '<div class="stat-grid">'+
+    statCard("Enrolled Students", t.students, "This term")+
+    statCard("Total Assessed", fmtMoney(t.assessed), "All accounts")+
+    statCard("Total Collected", fmtMoney(t.collected), t.rate+"% collection rate")+
+    statCard("Outstanding Balance", fmtMoney(t.outstanding), "Across "+t.students+" accounts")+
+  '</div>'+
+  '<div class="two-col">'+
+    '<div class="panel"><div class="panel-head"><h3>Recent payments</h3><button class="btn btn-ghost btn-sm" data-action="admin-tab" data-tab="payments">View all</button></div>'+
+      '<div class="panel-body pad scroll-x">'+
+      (recent.length ? '<table class="ledger-table"><thead><tr><th>Student</th><th>Method</th><th>Date</th><th class="amt">Amount</th></tr></thead><tbody>'+
+        recent.map(function(p){
+          return '<tr class="clickable" data-action="view-receipt" data-pid="'+p.id+'" data-sid="'+p.studentId+'"><td>'+esc(p.studentName)+'</td><td>'+esc(p.method)+'</td><td class="small muted">'+fmtDate(p.date)+'</td><td class="amt num">'+fmtMoney(p.amount)+'</td></tr>';
+        }).join("")+'</tbody></table>' : emptyState("inbox","No payments recorded yet."))+
+      '</div></div>'+
+    '<div class="panel"><div class="panel-head"><h3>By payment method</h3></div>'+
+      '<div class="panel-body pad">'+
+      '<div class="chart-bars">'+
+        ["GCash","PayPal","QR","Cash"].map(function(m){
+          var pct = Math.round((methods[m]/maxM)*100);
+          return '<div class="chart-bar-row"><span>'+m+'</span><div class="chart-bar-track"><div class="chart-bar-fill" style="width:'+pct+'%; background:'+colors[m]+';"></div></div><span class="num" style="text-align:right;">'+fmtMoney(methods[m])+'</span></div>';
+        }).join("")+
+      '</div></div></div>'+
+  '</div>';
+}
+
+function statCard(lbl, val, delta){
+  return '<div class="stat-card"><div class="lbl">'+esc(lbl)+'</div><div class="val num">'+val+'</div><div class="delta">'+esc(delta)+'</div></div>';
+}
+
+function renderAdmStudents(){
+  var q = state.studentSearch.toLowerCase();
+  var list = data.students.filter(function(st){
+    if (!q) return true;
+    return st.name.toLowerCase().indexOf(q)>-1 || st.studentId.toLowerCase().indexOf(q)>-1 || st.program.toLowerCase().indexOf(q)>-1;
+  });
+  var rows = list.map(function(st){
+    var t = computeTotals(st);
+    var status = t.balance<=0 ? '<span class="badge paid">Fully paid</span>' : '<span class="badge pending">Balance due</span>';
+    return '<tr class="clickable" data-action="select-student" data-id="'+st.id+'">'+
+      '<td><div style="display:flex; align-items:center; gap:10px;"><span class="avatar" style="width:30px;height:30px;font-size:11px;">'+initials(st.name)+'</span>'+
+        '<div><div style="font-weight:600;">'+esc(st.name)+'</div><div class="small muted">'+esc(st.studentId)+'</div></div></div></td>'+
+      '<td class="small">'+esc(st.program)+'<br><span class="muted">'+esc(st.year)+'</span></td>'+
+      '<td class="amt num">'+fmtMoney(t.assessment)+'</td>'+
+      '<td class="amt num">'+fmtMoney(t.paid)+'</td>'+
+      '<td class="amt num" style="font-weight:700; color:'+(t.balance>0?"var(--danger)":"var(--primary-dark)")+';">'+fmtMoney(Math.max(t.balance,0))+'</td>'+
+      '<td>'+status+'</td>'+
+    '</tr>';
+  }).join("");
+
+  return ''+
+  '<div class="section-title"><h2>Students</h2><span class="sub">'+data.students.length+' enrolled</span></div>'+
+  '<div class="filter-row">'+
+    '<div class="searchbar" style="flex:1; max-width:320px;">'+ic("search")+'<input id="studentSearchInput" placeholder="Search name, ID, or program" value="'+esc(state.studentSearch)+'"></div>'+
+    '<button class="btn btn-primary" data-action="open-add-student">'+ic("plus")+' Add student</button>'+
+  '</div>'+
+  '<div class="panel"><div class="panel-body scroll-x">'+
+    (list.length ? '<table class="ledger-table"><thead><tr><th>Student</th><th>Program</th><th class="amt">Assessed</th><th class="amt">Paid</th><th class="amt">Balance</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table>'
+    : emptyState("users","No students match your search.")) +
+  '</div></div>';
+}
+
+function renderAdmStudentDetail(st){
+  if (!st) return renderAdmStudents();
+  var t = computeTotals(st);
+  var feeRows = st.fees.map(function(f){
+    return '<tr><td>'+esc(f.name)+'</td><td class="small muted">'+esc(f.category)+'</td><td class="amt num">'+fmtMoney(f.amount)+'</td>'+
+      '<td class="amt"><button class="icon-btn" data-action="remove-student-fee" data-sid="'+st.id+'" data-fid="'+f.id+'" title="Remove">'+ic("trash")+'</button></td></tr>';
+  }).join("");
+  var adjRows = st.adjustments.map(function(a){
+    return '<tr><td>'+esc(a.note)+'<div class="small muted">'+fmtDate(a.date)+'</div></td><td class="amt num" style="color:'+(a.type==="credit"?"var(--primary-dark)":"var(--danger)")+';">'+(a.type==="credit"?"\u2212":"+")+fmtMoney(a.amount)+'</td>'+
+      '<td class="amt"><button class="icon-btn" data-action="remove-student-adjustment" data-sid="'+st.id+'" data-aid="'+a.id+'" title="Remove">'+ic("trash")+'</button></td></tr>';
+  }).join("");
+  var payRows = st.payments.slice().sort(function(a,b){return new Date(b.date)-new Date(a.date);}).map(function(p){
+    var badge = p.status==="Voided" ? '<span class="badge voided">Voided</span>' : '<span class="badge paid">Completed</span>';
+    return '<tr><td>'+fmtDate(p.date)+'</td><td>'+esc(p.method)+'</td><td class="amt num">'+fmtMoney(p.amount)+'</td><td>'+badge+'</td>'+
+      '<td class="amt" style="white-space:nowrap;">'+
+        '<button class="icon-btn" data-action="view-receipt" data-pid="'+p.id+'" data-sid="'+st.id+'" title="Receipt">'+ic("receipt")+'</button> '+
+        (p.status==="Completed" ? '<button class="icon-btn" data-action="void-payment" data-pid="'+p.id+'" data-sid="'+st.id+'" title="Void">'+ic("close")+'</button>' : '')+
+      '</td></tr>';
+  }).join("");
+
+  return ''+
+  '<button class="back-link" data-action="back-to-students">'+ic("chevron").replace('viewBox="0 0 24 24"','viewBox="0 0 24 24" style="transform:rotate(180deg)"')+' Back to students</button>'+
+  '<div class="detail-head">'+
+    '<div class="detail-id"><span class="avatar">'+initials(st.name)+'</span>'+
+      '<div><h2 style="font-size:19px;">'+esc(st.name)+'</h2><p class="sub muted">'+esc(st.studentId)+' \u00B7 '+esc(st.program)+' \u00B7 '+esc(st.year)+'</p></div></div>'+
+    '<div style="display:flex; gap:8px;">'+
+      '<button class="btn btn-ghost btn-sm" data-action="open-edit-student" data-id="'+st.id+'">'+ic("edit")+' Edit</button>'+
+      '<button class="btn btn-danger btn-sm" data-action="delete-student" data-id="'+st.id+'">'+ic("trash")+' Remove</button>'+
+    '</div>'+
+  '</div>'+
+  '<div class="ledger-grid">'+
+    '<div class="ledger-cell"><div class="lbl">Assessment</div><div class="val num">'+fmtMoney(t.assessment)+'</div></div>'+
+    '<div class="ledger-cell"><div class="lbl">Paid</div><div class="val num pos">'+fmtMoney(t.paid)+'</div></div>'+
+    '<div class="ledger-cell"><div class="lbl">Balance</div><div class="val num '+(t.balance>0?"neg":"pos")+'">'+fmtMoney(Math.max(t.balance,0))+'</div></div>'+
+  '</div>'+
+  '<div class="two-col">'+
+    '<div>'+
+      '<div class="panel"><div class="panel-head"><h3>Assigned fees</h3><button class="btn btn-ghost btn-sm" data-action="open-add-fee" data-sid="'+st.id+'">'+ic("plus")+' Add fee</button></div>'+
+        '<div class="panel-body scroll-x">'+(st.fees.length?'<table class="ledger-table"><thead><tr><th>Item</th><th>Category</th><th class="amt">Amount</th><th></th></tr></thead><tbody>'+feeRows+'</tbody></table>':emptyState("tag","No fees assigned."))+'</div></div>'+
+      '<div class="panel"><div class="panel-head"><h3>Adjustments</h3><button class="btn btn-ghost btn-sm" data-action="open-add-adjustment" data-sid="'+st.id+'">'+ic("plus")+' Add adjustment</button></div>'+
+        '<div class="panel-body scroll-x">'+(st.adjustments.length?'<table class="ledger-table"><thead><tr><th>Description</th><th class="amt">Amount</th><th></th></tr></thead><tbody>'+adjRows+'</tbody></table>':emptyState("tag","No adjustments."))+'</div></div>'+
+    '</div>'+
+    '<div>'+
+      '<div class="panel"><div class="panel-head"><h3>Contact</h3></div><div class="panel-body pad">'+
+        '<div class="kv-grid"><div><div class="k">Email</div><div class="v">'+esc(st.email)+'</div></div><div><div class="k">Mobile</div><div class="v">'+esc(st.phone)+'</div></div></div>'+
+      '</div></div>'+
+      '<div class="panel"><div class="panel-head"><h3>Payments</h3><button class="btn btn-ghost btn-sm" data-action="open-record-payment" data-sid="'+st.id+'">'+ic("plus")+' Record</button></div>'+
+        '<div class="panel-body scroll-x">'+(st.payments.length?'<table class="ledger-table"><thead><tr><th>Date</th><th>Method</th><th class="amt">Amt</th><th>Status</th><th></th></tr></thead><tbody>'+payRows+'</tbody></table>':emptyState("receipt","No payments recorded."))+'</div></div>'+
+    '</div>'+
+  '</div>';
+}
+
+function renderAdmFees(){
+  var rows = data.feeTemplates.map(function(f){
+    return '<tr><td>'+esc(f.name)+'</td><td class="small muted">'+esc(f.category)+'</td><td class="amt num">'+fmtMoney(f.defaultAmount)+'</td>'+
+      '<td class="amt" style="white-space:nowrap;">'+
+      '<button class="icon-btn" data-action="open-edit-fee-template" data-id="'+f.id+'" title="Edit">'+ic("edit")+'</button> '+
+      '<button class="icon-btn" data-action="delete-fee-template" data-id="'+f.id+'" title="Delete">'+ic("trash")+'</button></td></tr>';
+  }).join("");
+  return ''+
+  '<div class="section-title"><h2>Fee Templates</h2><span class="sub">Standard catalog used when assigning fees to students</span></div>'+
+  '<div class="filter-row"><div></div><button class="btn btn-primary" data-action="open-add-fee-template">'+ic("plus")+' New fee template</button></div>'+
+  '<div class="panel"><div class="panel-body scroll-x">'+
+    (data.feeTemplates.length ? '<table class="ledger-table"><thead><tr><th>Fee name</th><th>Category</th><th class="amt">Default amount</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>' : emptyState("tag","No fee templates yet."))+
+  '</div></div>'+
+  '<p class="small muted">Tip: open a student\u2019s profile under <b>Students</b> to assign any of these templates (or a custom fee) directly to their account.</p>';
+}
+
+function renderAdmPayments(){
+  var f = state.paymentFilter;
+  var list = allPayments().filter(function(p){
+    if (f.method!=="all" && p.method!==f.method) return false;
+    if (f.search){
+      var q = f.search.toLowerCase();
+      if (p.studentName.toLowerCase().indexOf(q)===-1 && p.studentNo.toLowerCase().indexOf(q)===-1 && p.refNo.toLowerCase().indexOf(q)===-1) return false;
+    }
+    return true;
+  });
+  var rows = list.map(function(p){
+    var badge = p.status==="Voided" ? '<span class="badge voided">Voided</span>' : '<span class="badge paid">Completed</span>';
+    return '<tr><td><div style="font-weight:600;">'+esc(p.studentName)+'</div><div class="small muted">'+esc(p.studentNo)+'</div></td>'+
+      '<td>'+esc(p.method)+'</td><td class="small muted">'+esc(p.refNo)+'</td><td class="small muted">'+fmtDate(p.date)+'</td>'+
+      '<td class="amt num">'+fmtMoney(p.amount)+'</td><td>'+badge+'</td>'+
+      '<td class="amt" style="white-space:nowrap;">'+
+        '<button class="icon-btn" data-action="view-receipt" data-pid="'+p.id+'" data-sid="'+p.studentId+'" title="Receipt">'+ic("receipt")+'</button> '+
+        (p.status==="Completed" ? '<button class="icon-btn" data-action="void-payment" data-pid="'+p.id+'" data-sid="'+p.studentId+'" title="Void">'+ic("close")+'</button>' : '')+
+      '</td></tr>';
+  }).join("");
+
+  return ''+
+  '<div class="section-title"><h2>Payments</h2><span class="sub">'+list.length+' transaction(s)</span></div>'+
+  '<div class="filter-row">'+
+    '<div class="searchbar" style="max-width:260px;">'+ic("search")+'<input id="paymentSearchInput" placeholder="Search student or reference" value="'+esc(f.search)+'"></div>'+
+    '<select id="paymentMethodFilter">'+
+      '<option value="all"'+(f.method==="all"?" selected":"")+'>All methods</option>'+
+      '<option value="GCash"'+(f.method==="GCash"?" selected":"")+'>GCash</option>'+
+      '<option value="PayPal"'+(f.method==="PayPal"?" selected":"")+'>PayPal</option>'+
+      '<option value="Cash"'+(f.method==="Cash"?" selected":"")+'>Cash</option>'+
+    '</select>'+
+    '<div style="flex:1;"></div>'+
+    '<button class="btn btn-ghost" data-action="open-scan-qr">'+ic("search")+' Scan QR</button>'+
+    '<button class="btn btn-primary" data-action="open-record-payment">'+ic("plus")+' Record manual payment</button>'+
+  '</div>'+
+  (pendingQrCount() ? '<div class="panel"><div class="panel-body pad" style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">'+
+    '<span class="small">'+ic("inbox")+' '+pendingQrCount()+' student(s) waiting on a QR payment confirmation.</span>'+
+    '<button class="btn btn-primary btn-sm" data-action="open-scan-qr">Review &amp; confirm</button>'+
+  '</div></div>' : '')+
+  '<div class="panel"><div class="panel-body scroll-x">'+
+    (list.length ? '<table class="ledger-table"><thead><tr><th>Student</th><th>Method</th><th>Reference</th><th>Date</th><th class="amt">Amount</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>' : emptyState("receipt","No matching payments."))+
+  '</div></div>';
+}
+function pendingQrCount(){
+  return (data.qrRequests||[]).filter(function(r){return r.status==="pending";}).length;
+}
+
+function renderAdmReports(){
+  var from = state.reportFrom ? new Date(state.reportFrom) : null;
+  var to = state.reportTo ? new Date(state.reportTo+"T23:59:59") : null;
+  var pays = allPayments().filter(function(p){
+    if (p.status!=="Completed") return false;
+    var d = new Date(p.date);
+    if (from && d < from) return false;
+    if (to && d > to) return false;
+    return true;
+  });
+  var totalCollected = pays.reduce(function(s,p){return s+p.amount;},0);
+  var avg = pays.length ? totalCollected/pays.length : 0;
+  var org = orgTotals();
+  var methods = methodBreakdown(from, to);
+  var maxM = Math.max(1, methods.GCash, methods.PayPal, methods.Cash);
+  var colors = {GCash:"var(--gcash)", PayPal:"var(--paypal)", QR:"var(--primary)", Cash:"var(--amber)"};
+
+  var rows = pays.map(function(p){
+    return '<tr><td>'+fmtDate(p.date)+'</td><td>'+esc(p.studentName)+'</td><td class="small muted">'+esc(p.studentNo)+'</td><td>'+esc(p.method)+'</td><td class="small muted">'+esc(p.refNo)+'</td><td class="amt num">'+fmtMoney(p.amount)+'</td></tr>';
+  }).join("");
+
+  return ''+
+  '<div class="section-title"><h2>Payment Reports</h2><span class="sub">Filter by date range and export for your records</span></div>'+
+  '<div class="filter-row">'+
+    '<div class="field" style="margin-bottom:0;"><label>From</label><input type="date" id="reportFrom" value="'+esc(state.reportFrom)+'"></div>'+
+    '<div class="field" style="margin-bottom:0;"><label>To</label><input type="date" id="reportTo" value="'+esc(state.reportTo)+'"></div>'+
+    '<button class="btn btn-ghost" data-action="clear-report-filter" style="align-self:flex-end;">Clear</button>'+
+    '<div style="flex:1;"></div>'+
+    '<button class="btn btn-primary" data-action="export-report-csv" style="align-self:flex-end;">'+ic("download")+' Export CSV</button>'+
+  '</div>'+
+  '<div class="stat-grid">'+
+    statCard("Collected (range)", fmtMoney(totalCollected), pays.length+" transaction(s)")+
+    statCard("Average payment", fmtMoney(avg), "per transaction")+
+    statCard("Overall outstanding", fmtMoney(org.outstanding), "all accounts, all time")+
+    statCard("Collection rate", org.rate+"%", "assessed vs collected, all time")+
+  '</div>'+
+  '<div class="panel"><div class="panel-head"><h3>Collected by method (range)</h3></div><div class="panel-body pad">'+
+    '<div class="chart-bars">'+
+      ["GCash","PayPal","QR","Cash"].map(function(m){
+        var pct = Math.round((methods[m]/maxM)*100);
+        return '<div class="chart-bar-row"><span>'+m+'</span><div class="chart-bar-track"><div class="chart-bar-fill" style="width:'+pct+'%; background:'+colors[m]+';"></div></div><span class="num" style="text-align:right;">'+fmtMoney(methods[m])+'</span></div>';
+      }).join("")+
+    '</div></div></div>'+
+  '<div class="panel"><div class="panel-head"><h3>Transactions in range</h3></div><div class="panel-body scroll-x">'+
+    (pays.length ? '<table class="ledger-table"><thead><tr><th>Date</th><th>Student</th><th>No.</th><th>Method</th><th>Reference</th><th class="amt">Amount</th></tr></thead><tbody>'+rows+'</tbody></table>' : emptyState("chart","No transactions in this range."))+
+  '</div></div>';
+}
+
+/* ============================================================
+   MODALS
+=============================================================== */
+function renderModal(){
+  var m = state.modal;
+  var body = "";
+  var title = "";
+  if (m.type === "add-student"){ title = "Add student"; body = studentFormHtml(null); }
+  else if (m.type === "edit-student"){ title = "Edit student"; body = studentFormHtml(getStudent(m.id)); }
+  else if (m.type === "add-fee"){ title = "Add fee to student"; body = addFeeFormHtml(m.sid); }
+  else if (m.type === "add-adjustment"){ title = "Add adjustment"; body = addAdjustmentFormHtml(m.sid); }
+  else if (m.type === "record-payment"){ title = "Record manual payment"; body = recordPaymentFormHtml(m.sid); }
+  else if (m.type === "add-fee-template"){ title = "New fee template"; body = feeTemplateFormHtml(null); }
+  else if (m.type === "edit-fee-template"){ title = "Edit fee template"; body = feeTemplateFormHtml(data.feeTemplates.filter(function(f){return f.id===m.id;})[0]); }
+  else if (m.type === "view-receipt"){ title = "Receipt"; body = viewReceiptModalHtml(m.sid, m.pid); }
+  else if (m.type === "scan-qr"){ title = "Scan QR to confirm payment"; body = scanQrModalHtml(); }
+  else if (m.type === "confirm"){ title = m.title||"Confirm"; body = confirmModalHtml(m); }
+
+  return '<div class="modal-overlay" data-action="close-modal-backdrop">'+
+    '<div class="modal" data-stop="1">'+
+      '<div class="modal-head"><h3>'+esc(title)+'</h3><button class="icon-btn" data-action="close-modal">'+ic("close")+'</button></div>'+
+      '<div class="modal-body">'+body+'</div>'+
+    '</div></div>';
+}
+
+function studentFormHtml(st){
+  var isEdit = !!st;
+  return '<form data-form="'+(isEdit?"edit-student":"add-student")+'" data-id="'+(isEdit?st.id:"")+'">'+
+    '<div class="field-row">'+
+      '<div class="field"><label>Full name</label><input name="name" value="'+(isEdit?esc(st.name):"")+'" required></div>'+
+      '<div class="field"><label>Student number</label><input name="studentId" value="'+(isEdit?esc(st.studentId):"")+'" required '+(isEdit?"":"")+'></div>'+
+    '</div>'+
+    '<div class="field-row">'+
+      '<div class="field"><label>Program</label><input name="program" value="'+(isEdit?esc(st.program):"")+'" required></div>'+
+      '<div class="field"><label>Year level</label><input name="year" value="'+(isEdit?esc(st.year):"")+'" placeholder="e.g. 2nd Year" required></div>'+
+    '</div>'+
+    '<div class="field-row">'+
+      '<div class="field"><label>Email</label><input name="email" type="email" value="'+(isEdit?esc(st.email):"")+'" required></div>'+
+      '<div class="field"><label>Mobile</label><input name="phone" value="'+(isEdit?esc(st.phone):"")+'" required></div>'+
+    '</div>'+
+    (isEdit ? '' : '<div class="field"><label>Temporary password</label><input name="password" value="student123" required><div class="hint">Student can use this to sign in immediately.</div></div>')+
+    '<button type="submit" class="btn btn-primary btn-block">'+(isEdit?"Save changes":"Add student")+'</button>'+
+  '</form>';
+}
+
+function addFeeFormHtml(sid){
+  var opts = data.feeTemplates.map(function(f){ return '<option value="'+f.id+'">'+esc(f.name)+' \u2014 '+fmtMoney(f.defaultAmount)+'</option>'; }).join("");
+  return '<form data-form="add-fee" data-sid="'+sid+'">'+
+    '<div class="field"><label>From template</label><select name="templateId"><option value="">Custom fee\u2026</option>'+opts+'</select></div>'+
+    '<div class="field-row">'+
+      '<div class="field"><label>Fee name</label><input name="name" placeholder="e.g. Graduation Fee" required></div>'+
+      '<div class="field input-money"><label>Amount</label><input name="amount" type="number" min="0" step="0.01" required></div>'+
+    '</div>'+
+    '<div class="field"><label>Category</label><select name="category"><option>Tuition</option><option>Miscellaneous</option><option selected>Laboratory</option><option>Other</option></select></div>'+
+    '<button type="submit" class="btn btn-primary btn-block">Add fee</button>'+
+  '</form>';
+}
+
+function addAdjustmentFormHtml(sid){
+  return '<form data-form="add-adjustment" data-sid="'+sid+'">'+
+    '<div class="field"><label>Type</label><select name="type"><option value="charge">Charge (adds to balance)</option><option value="credit">Credit / Discount / Scholarship (reduces balance)</option></select></div>'+
+    '<div class="field-row">'+
+      '<div class="field"><label>Description</label><input name="note" placeholder="e.g. Academic scholarship" required></div>'+
+      '<div class="field input-money"><label>Amount</label><input name="amount" type="number" min="0.01" step="0.01" required></div>'+
+    '</div>'+
+    '<button type="submit" class="btn btn-primary btn-block">Add adjustment</button>'+
+  '</form>';
+}
+
+function recordPaymentFormHtml(sid){
+  var opts = data.students.map(function(s){ return '<option value="'+s.id+'" '+(s.id===sid?"selected":"")+'>'+esc(s.name)+' \u2014 '+esc(s.studentId)+'</option>'; }).join("");
+  return '<form data-form="record-payment">'+
+    '<div class="field"><label>Student</label><select name="studentId" required>'+(sid?'':'<option value="">Select student\u2026</option>')+opts+'</select></div>'+
+    '<div class="field-row">'+
+      '<div class="field input-money"><label>Amount</label><input name="amount" type="number" min="1" step="0.01" required></div>'+
+      '<div class="field"><label>Method</label><select name="method"><option>Cash</option><option>Bank Transfer</option><option>GCash</option><option>PayPal</option><option value="QR">QR</option></select></div>'+
+    '</div>'+
+    '<div class="field"><label>Note (optional)</label><input name="note" placeholder="e.g. Paid at cashier window"></div>'+
+    '<button type="submit" class="btn btn-primary btn-block">Record payment</button>'+
+  '</form>';
+}
+
+function feeTemplateFormHtml(ft){
+  var isEdit = !!ft;
+  return '<form data-form="'+(isEdit?"edit-fee-template":"add-fee-template")+'" data-id="'+(isEdit?ft.id:"")+'">'+
+    '<div class="field"><label>Fee name</label><input name="name" value="'+(isEdit?esc(ft.name):"")+'" required></div>'+
+    '<div class="field-row">'+
+      '<div class="field"><label>Category</label><select name="category">'+
+        ["Tuition","Miscellaneous","Laboratory","Other"].map(function(c){return '<option '+(isEdit&&ft.category===c?"selected":"")+'>'+c+'</option>';}).join("")+
+      '</select></div>'+
+      '<div class="field input-money"><label>Default amount</label><input name="defaultAmount" type="number" min="0" step="0.01" value="'+(isEdit?ft.defaultAmount:"")+'" required></div>'+
+    '</div>'+
+    '<button type="submit" class="btn btn-primary btn-block">'+(isEdit?"Save changes":"Create template")+'</button>'+
+  '</form>';
+}
+
+function viewReceiptModalHtml(sid, pid){
+  var st = getStudent(sid);
+  if (!st) return emptyState("receipt","Receipt not found.");
+  var p = st.payments.filter(function(x){return x.id===pid;})[0];
+  if (!p) return emptyState("receipt","Receipt not found.");
+  var idx = st.payments.indexOf(p);
+  var runningPaid = 0;
+  st.payments.forEach(function(pp, i){ if (i<=idx && pp.status==="Completed") runningPaid += pp.amount; });
+  var t = computeTotals(st);
+  var balanceAfter = t.assessment - runningPaid;
+  var r = {receiptNo:p.receiptNo, date:p.date, studentName:st.name, studentNo:st.studentId, method:p.method, refNo:p.refNo, amount:p.amount, balanceAfter:balanceAfter, status:p.status, id:p.id};
+  return renderReceiptCard(r)+
+    '<div class="receipt-foot no-print"><button class="btn btn-ghost btn-block" data-action="print-receipt">'+ic("print")+' Print</button>'+
+    '<button class="btn btn-ghost btn-block" data-action="download-receipt" data-rid="'+r.id+'">'+ic("download")+' Save as file</button></div>';
+}
+
+function scanQrModalHtml(){
+  var pending = (data.qrRequests||[]).filter(function(r){return r.status==="pending";})
+    .sort(function(a,b){return new Date(b.createdAt)-new Date(a.createdAt);});
+  var listHtml = pending.length ? pending.map(function(r){
+    return '<div class="qr-pending-item"><div>'+
+      '<div style="font-weight:600; font-size:13.5px;">'+esc(r.studentName)+'</div>'+
+      '<div class="small muted">'+esc(r.studentNo)+' \u00B7 '+esc(r.refNo)+' \u00B7 '+fmtMoney(r.amount)+'</div></div>'+
+      '<button class="btn btn-primary btn-sm" data-action="confirm-qr-request" data-id="'+r.id+'">Confirm</button></div>';
+  }).join("") : '<p class="small muted">No pending QR requests right now.</p>';
+
+  return ''+
+    '<div class="scan-video-wrap"><video id="qrVideo" muted playsinline></video></div>'+
+    '<canvas id="qrCanvas" hidden></canvas>'+
+    '<p class="small muted" id="qrScanStatus" style="text-align:center; margin-bottom:12px;">Tap \u201CStart camera\u201D and point it at the student\u2019s QR code.</p>'+
+    '<button class="btn btn-ghost btn-block" data-action="start-camera-scan" style="margin-bottom:18px;">'+ic("search")+' Start camera</button>'+
+    '<hr class="divider" style="margin:16px 0;">'+
+    '<label style="font-size:12.5px; font-weight:600; color:var(--ink-700);">Or enter the request ref / scanned text</label>'+
+    '<div style="display:flex; gap:8px; margin:8px 0 18px;">'+
+      '<input id="qrManualInput" placeholder="e.g. QR-1029384756" style="flex:1; border:1px solid var(--line-strong); border-radius:var(--radius-sm); padding:9px 12px; font-size:13.5px; background:var(--paper-raised); color:var(--ink-900);">'+
+      '<button class="btn btn-ghost" data-action="qr-manual-lookup">Confirm</button>'+
+    '</div>'+
+    '<hr class="divider" style="margin:16px 0;">'+
+    '<label style="font-size:12.5px; font-weight:600; color:var(--ink-700);">Pending QR requests</label>'+
+    '<div style="margin-top:6px;">'+listHtml+'</div>';
+}
+
+function confirmModalHtml(m){
+  return '<p style="margin-bottom:18px; color:var(--ink-700); font-size:14px;">'+esc(m.message)+'</p>'+
+    '<div style="display:flex; gap:10px; justify-content:flex-end;">'+
+      '<button class="btn btn-ghost" data-action="close-modal">Cancel</button>'+
+      '<button class="btn btn-danger" data-action="confirm-yes">'+esc(m.confirmLabel||"Confirm")+'</button>'+
+    '</div>';
+}
+
+/* ============================================================
+   EVENT HANDLING
+=============================================================== */
+document.addEventListener("click", function(e){
+  var el = e.target.closest("[data-action]");
+  if (!el) return;
+  var action = el.getAttribute("data-action");
+
+  if (action === "close-modal-backdrop"){ if (e.target === el){ stopScan(); state.modal=null; render(); } return; }
+  if (action === "close-modal"){ stopScan(); state.modal=null; render(); return; }
+
+  switch(action){
+    case "set-login-role":
+      state.loginRole = el.getAttribute("data-role"); state.loginError=""; render(); break;
+    case "logout":
+      state.session = null; saveSession(); state.studentTab="overview"; state.adminTab="overview";
+      state.selectedStudentId=null; state.pay=null; render(); break;
+    case "student-tab":
+      state.studentTab = el.getAttribute("data-tab");
+      if (state.studentTab !== "pay") state.pay = null;
+      render(); break;
+    case "admin-tab":
+      state.adminTab = el.getAttribute("data-tab"); state.selectedStudentId=null; state.adminDrawerOpen=false; render(); break;
+    case "admin-drawer-toggle":
+      state.adminDrawerOpen = !state.adminDrawerOpen; render(); break;
+    case "admin-drawer-close":
+      state.adminDrawerOpen = false; render(); break;
+    case "select-student":
+      state.selectedStudentId = el.getAttribute("data-id"); render(); break;
+    case "back-to-students":
+      state.selectedStudentId = null; render(); break;
+
+    case "open-add-student": state.modal={type:"add-student"}; render(); break;
+    case "open-edit-student": state.modal={type:"edit-student", id:el.getAttribute("data-id")}; render(); break;
+    case "delete-student":
+      state.modal = {type:"confirm", title:"Remove student", message:"This will permanently remove the student account and all its records. This cannot be undone.", confirmLabel:"Remove",
+        onConfirm:function(){
+          var id = el.getAttribute("data-id");
+          data.students = data.students.filter(function(s){return s.id!==id;});
+          saveData(); state.selectedStudentId=null; showToast("Student removed");
+        }};
+      render(); break;
+
+    case "open-add-fee": state.modal={type:"add-fee", sid:el.getAttribute("data-sid")}; render(); break;
+    case "remove-student-fee":
+      removeFrom(getStudent(el.getAttribute("data-sid")).fees, el.getAttribute("data-fid"));
+      saveData(); showToast("Fee removed"); render(); break;
+
+    case "open-add-adjustment": state.modal={type:"add-adjustment", sid:el.getAttribute("data-sid")}; render(); break;
+    case "remove-student-adjustment":
+      removeFrom(getStudent(el.getAttribute("data-sid")).adjustments, el.getAttribute("data-aid"));
+      saveData(); showToast("Adjustment removed"); render(); break;
+
+    case "open-record-payment": state.modal={type:"record-payment", sid:el.getAttribute("data-sid")||null}; render(); break;
+    case "void-payment":
+      state.modal = {type:"confirm", title:"Void payment", message:"Voiding this payment will add its amount back to the student's outstanding balance.", confirmLabel:"Void payment",
+        onConfirm:function(){
+          var st = getStudent(el.getAttribute("data-sid"));
+          var p = st.payments.filter(function(x){return x.id===el.getAttribute("data-pid");})[0];
+          if (p) p.status = "Voided";
+          saveData(); showToast("Payment voided");
+        }};
+      render(); break;
+
+    case "open-add-fee-template": state.modal={type:"add-fee-template"}; render(); break;
+    case "open-edit-fee-template": state.modal={type:"edit-fee-template", id:el.getAttribute("data-id")}; render(); break;
+    case "delete-fee-template":
+      var fid = el.getAttribute("data-id");
+      data.feeTemplates = data.feeTemplates.filter(function(f){return f.id!==fid;});
+      saveData(); showToast("Fee template deleted"); render(); break;
+
+    case "view-receipt": state.modal={type:"view-receipt", sid:el.getAttribute("data-sid"), pid:el.getAttribute("data-pid")}; render(); break;
+
+    case "confirm-yes":
+      if (state.modal && state.modal.onConfirm) state.modal.onConfirm();
+      state.modal = null; render(); break;
+
+    case "pay-fill-full":
+      var stuF = currentStudent(); var tF = computeTotals(stuF);
+      state.pay.amount = tF.balance; render(); break;
+    case "pay-select-method":
+      state.pay.method = el.getAttribute("data-method"); render(); break;
+    case "pay-proceed":
+      var amtInput = document.getElementById("payAmountInput");
+      var errBox = document.getElementById("payAmountError");
+      var stuP = currentStudent(); var tP = computeTotals(stuP);
+      var amt = amtInput ? parseFloat(amtInput.value) : state.pay.amount;
+      if (!amt || amt <= 0 || amt > tP.balance + 0.001){
+        if (errBox) errBox.classList.add("show");
+        return;
+      }
+      state.pay.amount = Math.round(amt*100)/100;
+      if (state.pay.method === "QR"){
+        var qrReq = createQrRequest(stuP, state.pay.amount);
+        state.pay.requestId = qrReq.id;
+        state.pay.qrPayload = JSON.stringify({
+          type:"payment_request", school:data.school.name, provider:PAYMENT_CONFIG.qr.provider,
+          requestId:qrReq.id, refNo:qrReq.refNo, studentId:stuP.id, studentNo:stuP.studentId,
+          amount:state.pay.amount, currency:"PHP", expiresAt:qrReq.expiresAt
+        });
+        state.pay.step = "qr-wait";
+      } else {
+        state.pay.step = "gateway"; state.pay.processing = false;
+      }
+      render(); break;
+    case "pay-cancel":
+      if (state.pay.step === "qr-wait" && state.pay.requestId){
+        var cancelReq = data.qrRequests.filter(function(r){return r.id===state.pay.requestId;})[0];
+        if (cancelReq && cancelReq.status === "pending"){ cancelReq.status = "cancelled"; saveData(); }
+      }
+      state.pay.step = "select"; render(); break;
+    case "pay-confirm-gateway":
+      state.pay.processing = true; render();
+      setTimeout(function(){ completePayment(); }, 1400);
+      break;
+    case "qr-simulate-scan":
+      confirmQrRequestById(el.getAttribute("data-id"));
+      render(); break;
+    case "pay-new":
+      state.pay = null; state.studentTab = "overview"; render(); break;
+
+    case "print-receipt":
+      window.print(); break;
+    case "download-receipt":
+      downloadReceipt(el.getAttribute("data-rid")); break;
+
+    case "clear-report-filter":
+      state.reportFrom=""; state.reportTo=""; render(); break;
+    case "export-report-csv":
+      exportReportCsv(); break;
+
+    case "open-scan-qr":
+      state.modal = {type:"scan-qr"}; render(); break;
+    case "start-camera-scan":
+      startCameraScan(); break;
+    case "confirm-qr-request":
+      confirmQrRequestById(el.getAttribute("data-id"));
+      render(); break;
+    case "qr-manual-lookup":
+      var manualInput = document.getElementById("qrManualInput");
+      var raw = manualInput ? manualInput.value.trim() : "";
+      handleScannedPayload(raw);
+      break;
+  }
+});
+
+function removeFrom(arr, id){
+  var idx = arr.findIndex(function(x){return x.id===id;});
+  if (idx>-1) arr.splice(idx,1);
+}
+
+function completePayment(){
+  // SWAP POINT: in production this would not run client-side at all.
+  // The "Confirm & Pay" button would POST to
+  // PAYMENT_CONFIG.gcash.createPaymentEndpoint / .paypal.createPaymentEndpoint,
+  // the backend would call the real GCash/PayPal API, and the balance
+  // would only update once that provider's webhook confirms settlement
+  // (see the integration guide). Everything below is the simulated stand-in.
+  var stu = currentStudent();
+  if (!stu || !state.pay) return;
+  var method = state.pay.method;
+  var amount = state.pay.amount;
+  var receiptNo = nextReceiptNo();
+  var refNo = refNumber(method === "GCash" ? "GC" : "PP");
+  var payment = {
+    id: uid("p"), date: new Date().toISOString(), method: method, amount: amount,
+    refNo: refNo, receiptNo: receiptNo, status: "Completed", note: "Online payment"
+  };
+  stu.payments.push(payment);
+  saveData();
+  var t = computeTotals(stu);
+  state.pay.step = "success";
+  state.pay.processing = false;
+  state.pay.receipt = {
+    id: payment.id, receiptNo: receiptNo, date: payment.date, studentName: stu.name, studentNo: stu.studentId,
+    method: method, refNo: refNo, amount: amount, balanceAfter: t.balance, status: "Completed"
+  };
+  render();
+}
+
+/* ============================================================
+   QR PAYMENTS
+=============================================================== */
+function createQrRequest(stu, amount){
+  // SWAP POINT: in production, POST to PAYMENT_CONFIG.qr.createPaymentEndpoint
+  // and use the real QR Ph payload the backend/aggregator returns instead of
+  // building refNo/expiresAt locally. Shape kept intent-like on purpose.
+  var req = {
+    id: uid("qr"), studentId: stu.id, studentName: stu.name, studentNo: stu.studentId,
+    amount: amount, currency: "PHP", refNo: refNumber("QR"),
+    merchantId: PAYMENT_CONFIG.qr.merchantId, provider: PAYMENT_CONFIG.qr.provider,
+    status: "pending", createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 15*60000).toISOString(),
+    mode: PAYMENT_CONFIG.qr.mode, paymentId: null
+  };
+  data.qrRequests.push(req);
+  saveData();
+  return req;
+}
+
+function confirmQrRequestById(id){
+  // SWAP POINT: in production this fires from PAYMENT_CONFIG.qr.webhookEndpoint
+  // when the aggregator confirms settlement — never from a button an admin
+  // clicks in the browser, so a scan can't be faked into a real payment.
+  var req = (data.qrRequests||[]).filter(function(r){return r.id===id;})[0];
+  if (!req){ showToast("Request not found"); return; }
+  if (req.status !== "pending"){ showToast("This request was already " + req.status); return; }
+  var stu = getStudent(req.studentId);
+  if (!stu){ showToast("Student not found"); return; }
+  var payment = {
+    id: uid("p"), date: new Date().toISOString(), method: "QR", amount: req.amount,
+    refNo: req.refNo, receiptNo: nextReceiptNo(), status: "Completed", note: "Confirmed via QR scan"
+  };
+  stu.payments.push(payment);
+  req.status = "completed";
+  req.paymentId = payment.id;
+  saveData();
+  showToast("Payment of " + fmtMoney(req.amount) + " confirmed for " + stu.name);
+  if (state.modal && state.modal.type === "scan-qr"){ stopScan(); state.modal = null; }
+}
+
+var scanStream = null;
+function startCameraScan(){
+  var statusEl = document.getElementById("qrScanStatus");
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    if (statusEl) statusEl.textContent = "Camera isn\u2019t available in this browser \u2014 use the list or manual entry below.";
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(function(stream){
+    scanStream = stream;
+    var video = document.getElementById("qrVideo");
+    if (!video){ stopScan(); return; }
+    video.srcObject = stream;
+    video.setAttribute("playsinline", "true");
+    video.play();
+    if (statusEl) statusEl.textContent = "Point the camera at the student\u2019s QR code\u2026";
+    requestAnimationFrame(scanTick);
+  }).catch(function(){
+    if (statusEl) statusEl.textContent = "Camera access was denied or unavailable \u2014 use the list or manual entry below.";
+  });
+}
+function scanTick(){
+  if (!scanStream) return;
+  var video = document.getElementById("qrVideo");
+  var canvas = document.getElementById("qrCanvas");
+  if (video && canvas && window.jsQR && video.readyState === video.HAVE_ENOUGH_DATA){
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    var ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    var code = window.jsQR(imgData.data, imgData.width, imgData.height);
+    if (code && code.data){
+      handleScannedPayload(code.data);
+      return;
+    }
+  }
+  if (scanStream) requestAnimationFrame(scanTick);
+}
+function handleScannedPayload(text){
+  stopScan();
+  var payload = null;
+  try{ payload = JSON.parse(text); }catch(e){ payload = null; }
+  var requestId = payload && payload.requestId ? payload.requestId : text;
+  if (!requestId){ showToast("QR code not recognized"); render(); return; }
+  confirmQrRequestById(requestId);
+  render();
+}
+function stopScan(){
+  if (scanStream){
+    scanStream.getTracks().forEach(function(tr){ tr.stop(); });
+    scanStream = null;
+  }
+}
+
+function downloadReceipt(rid){
+  var receiptData = null;
+  data.students.forEach(function(st){
+    st.payments.forEach(function(p){
+      if (p.id === rid){
+        var idx = st.payments.indexOf(p);
+        var runningPaid = 0;
+        st.payments.forEach(function(pp,i){ if(i<=idx && pp.status==="Completed") runningPaid += pp.amount; });
+        var t = computeTotals(st);
+        receiptData = {receiptNo:p.receiptNo, date:p.date, studentName:st.name, studentNo:st.studentId, method:p.method, refNo:p.refNo, amount:p.amount, balanceAfter:t.assessment-runningPaid, status:p.status};
+      }
+    });
+  });
+  if (!receiptData) return;
+  var text = "OFFICIAL DIGITAL RECEIPT\n" + data.school.name + "\n" + data.school.term + "\n\n" +
+    "Receipt No: " + receiptData.receiptNo + "\n" +
+    "Date: " + fmtDateTime(receiptData.date) + "\n" +
+    "Student: " + receiptData.studentName + " (" + receiptData.studentNo + ")\n" +
+    "Payment Method: " + receiptData.method + "\n" +
+    "Reference No: " + receiptData.refNo + "\n" +
+    "Amount Paid: " + fmtMoney(receiptData.amount) + "\n" +
+    "Remaining Balance: " + fmtMoney(Math.max(receiptData.balanceAfter,0)) + "\n" +
+    "Status: " + receiptData.status + "\n";
+  offerDownload(receiptData.receiptNo + ".txt", text);
+}
+
+function exportReportCsv(){
+  var from = state.reportFrom ? new Date(state.reportFrom) : null;
+  var to = state.reportTo ? new Date(state.reportTo+"T23:59:59") : null;
+  var pays = allPayments().filter(function(p){
+    if (p.status!=="Completed") return false;
+    var d = new Date(p.date);
+    if (from && d < from) return false;
+    if (to && d > to) return false;
+    return true;
+  });
+  var lines = ["Date,Student Name,Student Number,Method,Reference No,Receipt No,Amount"];
+  pays.forEach(function(p){
+    lines.push([fmtDate(p.date), csvSafe(p.studentName), p.studentNo, p.method, p.refNo, p.receiptNo, p.amount].join(","));
+  });
+  offerDownload("payment-report.csv", lines.join("\n"));
+}
+function csvSafe(s){
+  s = String(s);
+  if (s.indexOf(",")>-1 || s.indexOf('"')>-1) return '"' + s.replace(/"/g,'""') + '"';
+  return s;
+}
+
+function offerDownload(filename, text){
+  if (window.claude && window.__downloadsNS){
+    window.__downloadsNS.save({filename:filename, data:text}).then(function(){
+      showToast("Saved " + filename);
+    }).catch(function(err){
+      fallbackDownload(filename, text);
+    });
+  } else {
+    fallbackDownload(filename, text);
+  }
+}
+function fallbackDownload(filename, text){
+  try{
+    var blob = new Blob([text], {type:"text/plain"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("Downloaded " + filename);
+  }catch(e){
+    showToast("Unable to download here");
+  }
+}
+
+/* ============================================================
+   FORM SUBMISSIONS
+=============================================================== */
+document.addEventListener("submit", function(e){
+  var form = e.target.closest("[data-form]");
+  if (!form) return;
+  e.preventDefault();
+  var kind = form.getAttribute("data-form");
+  var fd = new FormData(form);
+
+  if (kind === "login"){
+    var id = (fd.get("id")||"").trim();
+    var pw = (fd.get("password")||"").trim();
+    if (state.loginRole === "student"){
+      var stu = data.students.filter(function(s){return s.studentId===id;})[0];
+      if (stu && stu.password === pw){
+        state.session = {role:"student", studentId:stu.id}; saveSession();
+        state.loginError=""; state.studentTab="overview"; render();
+      } else {
+        state.loginError = "Student number or password is incorrect."; render();
+      }
+    } else {
+      if (id === data.admin.username && pw === data.admin.password){
+        state.session = {role:"admin"}; saveSession(); state.loginError=""; state.adminTab="overview"; render();
+      } else {
+        state.loginError = "Username or password is incorrect."; render();
+      }
+    }
+    return;
+  }
+
+  if (kind === "update-profile"){
+    var stuU = currentStudent();
+    stuU.email = fd.get("email"); stuU.phone = fd.get("phone");
+    saveData(); showToast("Profile updated"); render(); return;
+  }
+
+  if (kind === "add-student"){
+    var dupId = fd.get("studentId").trim();
+    if (data.students.some(function(s){return s.studentId===dupId;})){
+      showToast("That student number already exists"); return;
+    }
+    data.students.push({
+      id: uid("s"), studentId: dupId, password: (fd.get("password")||"student123").trim(),
+      name: fd.get("name").trim(), program: fd.get("program").trim(), year: fd.get("year").trim(),
+      email: fd.get("email").trim(), phone: fd.get("phone").trim(),
+      fees:[], adjustments:[], payments:[]
+    });
+    saveData(); state.modal=null; showToast("Student added"); render(); return;
+  }
+
+  if (kind === "edit-student"){
+    var stE = getStudent(form.getAttribute("data-id"));
+    stE.name=fd.get("name").trim(); stE.studentId=fd.get("studentId").trim(); stE.program=fd.get("program").trim();
+    stE.year=fd.get("year").trim(); stE.email=fd.get("email").trim(); stE.phone=fd.get("phone").trim();
+    saveData(); state.modal=null; showToast("Student updated"); render(); return;
+  }
+
+  if (kind === "add-fee"){
+    var sidF = form.getAttribute("data-sid");
+    var stF = getStudent(sidF);
+    var tmplId = fd.get("templateId");
+    var name, category, amount;
+    amount = parseFloat(fd.get("amount"));
+    if (tmplId){
+      var tmpl = data.feeTemplates.filter(function(t){return t.id===tmplId;})[0];
+      name = fd.get("name") || tmpl.name; category = tmpl.category;
+    } else {
+      name = fd.get("name"); category = fd.get("category");
+    }
+    stF.fees.push({id:uid("f"), name:name, category:category, amount: amount||0});
+    saveData(); state.modal=null; showToast("Fee added"); render(); return;
+  }
+
+  if (kind === "add-adjustment"){
+    var sidA = form.getAttribute("data-sid");
+    var stA = getStudent(sidA);
+    stA.adjustments.push({id:uid("adj"), date:new Date().toISOString(), type:fd.get("type"), amount:parseFloat(fd.get("amount"))||0, note:fd.get("note")});
+    saveData(); state.modal=null; showToast("Adjustment added"); render(); return;
+  }
+
+  if (kind === "record-payment"){
+    var sidR = fd.get("studentId") || (state.modal && state.modal.sid);
+    var stR = getStudent(sidR);
+    if (!stR){ showToast("Select a student"); return; }
+    var amtR = parseFloat(fd.get("amount"));
+    var methodR = fd.get("method");
+    var prefix = methodR==="GCash"?"GC":(methodR==="PayPal"?"PP":(methodR==="QR"?"QR":"MAN"));
+    stR.payments.push({
+      id: uid("p"), date: new Date().toISOString(), method: methodR, amount: amtR,
+      refNo: refNumber(prefix), receiptNo: nextReceiptNo(), status:"Completed", note: fd.get("note")||""
+    });
+    saveData(); state.modal=null; showToast("Payment recorded"); render(); return;
+  }
+
+  if (kind === "add-fee-template"){
+    data.feeTemplates.push({id:uid("ft"), name:fd.get("name").trim(), category:fd.get("category"), defaultAmount:parseFloat(fd.get("defaultAmount"))||0});
+    saveData(); state.modal=null; showToast("Fee template created"); render(); return;
+  }
+  if (kind === "edit-fee-template"){
+    var ftE = data.feeTemplates.filter(function(f){return f.id===form.getAttribute("data-id");})[0];
+    ftE.name=fd.get("name").trim(); ftE.category=fd.get("category"); ftE.defaultAmount=parseFloat(fd.get("defaultAmount"))||0;
+    saveData(); state.modal=null; showToast("Fee template updated"); render(); return;
+  }
+});
+
+/* live search / filter inputs (event delegation on input) */
+document.addEventListener("input", function(e){
+  if (e.target.id === "studentSearchInput"){ state.studentSearch = e.target.value; renderPreserveFocus("studentSearchInput"); }
+  if (e.target.id === "paymentSearchInput"){ state.paymentFilter.search = e.target.value; renderPreserveFocus("paymentSearchInput"); }
+  if (e.target.id === "payAmountInput"){
+    var v = parseFloat(e.target.value);
+    if (state.pay) state.pay.amount = isNaN(v) ? 0 : v;
+    var btn = document.getElementById("payProceedBtn");
+    if (btn) btn.textContent = "Proceed to pay " + fmtMoney(state.pay ? state.pay.amount : 0);
+    var errBox = document.getElementById("payAmountError");
+    if (errBox) errBox.classList.remove("show");
+  }
+});
+document.addEventListener("change", function(e){
+  if (e.target.id === "paymentMethodFilter"){ state.paymentFilter.method = e.target.value; render(); }
+  if (e.target.id === "reportFrom"){ state.reportFrom = e.target.value; render(); }
+  if (e.target.id === "reportTo"){ state.reportTo = e.target.value; render(); }
+});
+
+function renderPreserveFocus(id){
+  var el = document.getElementById(id);
+  var pos = el ? el.selectionStart : null;
+  render();
+  var el2 = document.getElementById(id);
+  if (el2){ el2.focus(); if (pos!=null) el2.setSelectionRange(pos,pos); }
+}
+
+/* ============================================================
+   INIT
+=============================================================== */
+render();
+initDb();
+
+})();
+</script>
+</body>
+</html>
